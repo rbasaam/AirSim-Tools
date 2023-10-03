@@ -4,19 +4,17 @@ This repository contains a set of tools for working with the AirSim simulator. T
 
 ## Installation
 
-1. Clone the repository:
+Clone the repository:
 
 ```bash
 git clone https://github.com/rbasaam/AirSim-Tools.git
 ```
 
-2. Install the required dependencies:
-
+Install the required dependencies:
 
 - [AirSim](https://github.com/AVL-TMU/UnrealEngine-AirSim-PX4.git)
 - numpy
 - matplotlib
-
 
 ## Usage
 
@@ -38,7 +36,8 @@ Generates a flight path for surveying an area between two points.
 - `numWaypoints`: Number of waypoints to generate (int).
 - `plotFlag` (optional): Flag indicating whether to plot the flight path (bool, default=False).
 
-Returns 
+Returns
+
 - `waypoints`: List of airsim.Vector3r waypoints representing the flight path.
 
 #### `flyWaypoints(waypoints, playerSpeed)`
@@ -56,13 +55,12 @@ Pulls a specified number of frames from the AirSim simulator and saves them to t
 - `timeInterval`: Time interval between each frame pull (float).
 - `saveFolder`: Path to the folder where the frames will be saved (str).
 
-
 ### `main.py`
 
 The `main.py` script demonstrates the usage of the functions in `utils.py`. To run the script, execute the following command:
+
 ```bash
 python main.py
 ```
+
 Make sure to modify the parameters in the `main()` function to suit your needs.
-
-

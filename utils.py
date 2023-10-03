@@ -6,7 +6,17 @@ import time
 import os
 
 
-def surveryFlightPath(playerStart, playerEnd, surveryAltitude, ySweep, sideSweeps, zSweep, altSweeps, numWaypoints, plotFlag=False):
+def surveryFlightPath(
+        playerStart: np.ndarray, 
+        playerEnd: np.ndarray, 
+        surveryAltitude: float, 
+        ySweep: float, 
+        sideSweeps: float, 
+        zSweep: float, 
+        altSweeps: float, 
+        numWaypoints: int, 
+        plotFlag=False
+        ):
     """
     Generates a flight path for surveying an area between two points.
 
@@ -24,21 +34,27 @@ def surveryFlightPath(playerStart, playerEnd, surveryAltitude, ySweep, sideSweep
     Returns:
         airsim.vector3r: Array of waypoints representing the flight path.
     """
-
+    # Convert to meters
+    playerStart = playerStart/100
+    playerEnd = playerEnd/100
     playerTrip = playerEnd - playerStart
 
-    # generate the path
-    if numWaypoints>1000:
-        xx = np.linspace(0, playerTrip[0], numWaypoints)
-        yy = np.linspace(0, playerTrip[1], numWaypoints)+ySweep*np.sin((xx/playerTrip[0])*2*np.pi*sideSweeps)
-        zz = np.linspace(0, playerTrip[2], numWaypoints)-surveryAltitude-zSweep*np.sin((xx/playerTrip[0])*2*np.pi*altSweeps)
-    else:
-        xx = np.linspace(0, playerTrip[0], 1000)
-        yy = np.linspace(0, playerTrip[1], 1000)+ySweep*np.sin((xx/playerTrip[0])*2*np.pi*sideSweeps)
-        zz = np.linspace(0, playerTrip[2], 1000)-surveryAltitude-zSweep*np.sin((xx/playerTrip[0])*2*np.pi*altSweeps)
+    # Convert to Drone Frame
+    playerTrip = playerTrip*np.array([1, 1, -1])
 
-    # convert to waypoints
-    waypoints = np.array([xx, yy, zz]).T - playerStart
+    # generate the path wrt Drone Frame
+    if numWaypoints>1000:
+        xx = np.linspace(0, playerTrip[0,0], numWaypoints)
+        yy = np.linspace(0, playerTrip[0,1], numWaypoints)+ySweep*np.sin((xx/playerTrip[0,0])*2*np.pi*sideSweeps)
+        zz = np.linspace(0, playerTrip[0,2], numWaypoints)-surveryAltitude-zSweep*np.sin((xx/playerTrip[0,0])*2*np.pi*altSweeps)
+    else:
+        xx = np.linspace(0, playerTrip[0,0], 1000)
+        yy = np.linspace(0, playerTrip[0,1], 1000)+ySweep*np.sin((xx/playerTrip[0,0])*2*np.pi*sideSweeps)
+        zz = np.linspace(0, playerTrip[0,2], 1000)-surveryAltitude-zSweep*np.sin((xx/playerTrip[0,0])*2*np.pi*altSweeps)
+    waypoints = np.array([xx, yy, zz]).T 
+    
+    # convert to path wrt to World Frame
+    globalPath = (waypoints*np.array([1, 1, -1]) + playerStart)*100
 
     # select waypoints from the path
     indices = np.linspace(0, waypoints.shape[0]-1, numWaypoints).astype(int)
@@ -46,14 +62,64 @@ def surveryFlightPath(playerStart, playerEnd, surveryAltitude, ySweep, sideSweep
 
     # plot the path
     if plotFlag:
+        globalFlight = np.concatenate((
+            # start
+            playerStart*100,
+            # hover
+            playerStart*100 + np.array([[0, 0, surveryAltitude]]),
+            # path
+            globalPath,
+            # hover
+            playerEnd*100 + np.array([[0, 0, surveryAltitude]]),
+            # end
+            playerEnd*100,
+        ))
+
+        localFlight = np.concatenate((
+            # start
+            np.array([[0, 0, 0]]),
+            # hover
+            np.array([[0, 0, -surveryAltitude]]),
+            # path
+            waypoints,
+            # hover
+            playerTrip + np.array([[0, 0, -surveryAltitude]]),
+            # End
+            playerTrip,
+        ))
+
         fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.plot(waypoints[:,0], waypoints[:,1], waypoints[:,2])
+        ax = fig.add_subplot(1, 2, 1, projection='3d')
+        ax.plot(globalFlight[:,0], globalFlight[:,1], globalFlight[:,2])
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
-        ax.text(waypoints[0,0], waypoints[0,1], waypoints[0,2], 'start')
-        ax.text(waypoints[-1,0], waypoints[-1,1], waypoints[-1,2], 'end')
+        ax.text(globalFlight[0,0], globalFlight[0,1], globalFlight[0,2], 'playerStart')
+        ax.text(globalFlight[1,0], globalFlight[1,1], globalFlight[1,2], 'pathStart')
+        ax.text(globalFlight[-2,0], globalFlight[-2,1], globalFlight[-2,2], 'pathEnd')        
+        ax.text(globalFlight[-1,0], globalFlight[-1,1], globalFlight[-1,2], 'playerEnd')
+        ax.azim = -80 
+        ax.elev = 18 
+        ax.set_title('Flight Path World Frame')
+
+        print(f"Player Start: {globalFlight[0,:]}")
+        print(f"Path Start: {globalFlight[1,:]}")
+        print(f"Path End: {globalFlight[-2,:]}")
+        print(f"Player End: {globalFlight[-1,:]}")
+
+        ax = fig.add_subplot(1, 2, 2, projection='3d')
+        ax.plot(localFlight[:,0], localFlight[:,1], localFlight[:,2])
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        ax.text(localFlight[0,0], localFlight[0,1], localFlight[0,2], 'playerStart')
+        ax.text(localFlight[1,0], localFlight[1,1], localFlight[1,2], 'pathStart')
+        ax.text(localFlight[-2,0], localFlight[-2,1], localFlight[-2,2], 'pathEnd')        
+        ax.text(localFlight[-1,0], localFlight[-1,1], localFlight[-1,2], 'playerEnd') 
+        ax.azim = -130 
+        ax.elev = -160 
+        ax.set_title('Flight Path Drone Frame')
+
         plt.show()
 
     # convert to airsim.Vector3r
@@ -164,8 +230,22 @@ def pullFrames(numFrames: int, timeInterval: float, saveFolder: str):
         # Wait for the specified time interval before getting the next set of images
         time.sleep(timeInterval)
 
+def unreal2NED(unrealCoordinates):
+    """
+    Converts Unreal coordinates to North-East-Down (NED) coordinates.
 
+    Args:
+        unrealCoordinates (numpy.ndarray): Unreal NEU coordinates.
+    Returns:
+        numpy.ndarray: Drone NED coordinates.
+    """
+    nedCoordinates = np.array([
+        unrealCoordinates[0]/100,
+        unrealCoordinates[1]/100,
+        -unrealCoordinates[2]/100
+    ])
 
+    return nedCoordinates
 def getPathTangents(path):
     tangents = np.zeros(path.shape)
     tangents[0] = path[1] - path[0]

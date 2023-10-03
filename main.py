@@ -6,12 +6,14 @@ import threading
 SAVE_IMGS = False
 
 def main():
+    unrealStart = np.array([[-18045, 24560, 320]])
+    unrealEnd = np.array([[3000, 5000, -430]])
     # generate the path
     waypoints = surveryFlightPath(
-        playerStart = np.array([-18045, 24560, 320]), 
-        playerEnd = np.array([-12930, -39020, 90]), 
+        playerStart = unrealStart, 
+        playerEnd = unrealEnd, 
         surveryAltitude = 40.0, 
-        ySweep=20000,
+        ySweep=50,
         sideSweeps = 10,
         zSweep = 0, 
         altSweeps = 0, 
