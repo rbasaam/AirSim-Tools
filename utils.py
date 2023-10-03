@@ -2,6 +2,8 @@ import airsim
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import plotly.graph_objects as go
 import time
 import os
 
@@ -280,25 +282,31 @@ def droneSpawn(waypoints: np.ndarray, numDrones: np.uint8, FOV: np.array, plotFl
     # Initialize Spawn Points Array
     spawnPoints = np.zeros((numDrones, 3, waypoints.shape[0]))
 
+    radius = FOV[0]
+    thetaRange = np.deg2rad(FOV[1])
+    phiRange = np.deg2rad(FOV[2])
+
     # Generate random spawn points for each waypoint
     for wp in range(len(waypoints)):
         # Generate random ranges
-        ranges = FOV[0]*np.random.rand(numDrones)
+        ranges = np.random.uniform(3, FOV[0], size=numDrones)
         # Generate random Theta Angles centered around the tangent vector
         tangentTheta = np.arctan2(tangentVectors[wp,1], tangentVectors[wp,0])
-        thetaRange = FOV[1]/2
-        thetas = tangentTheta + np.deg2rad(-thetaRange + (np.random.rand(numDrones)*thetaRange*2))
+        thetas = tangentTheta + (-thetaRange + (np.random.rand(numDrones)*thetaRange*2))
         # Generate random Phi Angles centered around the tangent vector
-        tangentPhi = np.arctan2(tangentVectors[wp, 2], np.sqrt(tangentVectors[wp, 0]**2 + tangentVectors[wp, 1]**2))
-        phiRange = FOV[2] / 2  
-        phis = np.pi / 2 + tangentPhi + np.deg2rad(-phiRange + (2 * phiRange * np.random.rand(numDrones)))
+        tangentPhi = np.arctan2(tangentVectors[wp, 2], np.sqrt(tangentVectors[wp, 0]**2 + tangentVectors[wp, 1]**2)) 
+        phis = np.pi / 2 + tangentPhi + (-phiRange + (2 * phiRange * np.random.rand(numDrones)))
         # Convert spherical coordinates to Cartesian and add them to waypoints
         for drone in range(numDrones):
             spawnPoints[drone,:,wp] = waypoints[wp] + spherical2cartesian(ranges[drone], thetas[drone], phis[drone])
 
     if plotFlag:
+        waypointIndex=np.random.randint(low=0, high=len(waypoints) - 1)
+
         fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1, projection='3d')
+
+        ax = fig.add_subplot(1, 2, 1, projection='3d')
+        ax.set_box_aspect([1,1,1])
         ax.plot(waypoints[:,0], waypoints[:,1], waypoints[:,2])
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
@@ -307,12 +315,19 @@ def droneSpawn(waypoints: np.ndarray, numDrones: np.uint8, FOV: np.array, plotFl
         ax.text(waypoints[-1,0], waypoints[-1,1], waypoints[-1,2], 'pathEnd')        
         ax.azim = -80 
         ax.elev = 18 
-        ax.set_title('Flight Path World Frame')
-
+        ax.set_title('Random Spawn Points Along Flight Path in World Frame')
+        
         for wp in range(len(waypoints)):
             for drone in range(numDrones):
                 ax.scatter(spawnPoints[drone,0,wp], spawnPoints[drone,1,wp], spawnPoints[drone,2,wp], color='r', marker='o')
-        plt.show()
+
+        plotFOVs(
+            waypoints=waypoints,
+            spawnpoints=spawnPoints,
+            FOV=FOV,
+            waypointIndex=waypointIndex,
+            fig=fig,
+        )
 
     return spawnPoints
 
@@ -334,7 +349,7 @@ def getPathTangents(waypoints: np.ndarray):
     tangentVectors = tangentVectors/np.linalg.norm(tangentVectors, axis=1)[:,None]
     return tangentVectors
 
-def spherical2cartesian(r: np.float32, theta: np.float32, phi: np.float32):
+def spherical2cartesian(r, theta, phi):
     """
     Converts spherical coordinates to Cartesian coordinates.
 
@@ -350,3 +365,40 @@ def spherical2cartesian(r: np.float32, theta: np.float32, phi: np.float32):
     y = r * np.sin(theta) * np.sin(phi)
     z = r * np.cos(phi)
     return np.array([x, y, z])
+
+def plotFOVs(waypoints: np.ndarray, spawnpoints: np.ndarray, FOV: np.array, waypointIndex: np.uint8, fig=None):
+    # Calculate Tangent Vectors all Waypoints
+    tangentVectors = getPathTangents(waypoints)
+    radius = FOV[0]
+    thetaRange = np.deg2rad(FOV[1])
+    phiRange = np.deg2rad(FOV[2])
+    # Calculate Normal Vectors for each waypoint
+    center = waypoints[waypointIndex]
+    tangent = tangentVectors[waypointIndex]
+    # Calculate Waypoint Heading
+    tangentTheta = np.arctan2(tangent[1], tangent[0])
+    tangentPhi = np.arctan2(tangent[2], np.sqrt(tangent[0]**2 + tangent[1]**2))+np.pi/2
+    # Calculate FOV
+    spherePoints = 100
+    theta  = np.linspace(tangentTheta-thetaRange/2, tangentTheta+thetaRange/2, spherePoints)
+    phi   = np.linspace(tangentPhi-phiRange/2, tangentPhi+phiRange/2, spherePoints)
+    theta, phi = np.meshgrid(theta, phi)
+    # Calculate FOV Points
+    x = center[0] + radius*np.sin(phi)*np.cos(theta)
+    y = center[1] + radius*np.sin(phi)*np.sin(theta)
+    z = center[2] + radius*np.cos(phi)
+    if fig is not None:
+        # Plot
+        ax = fig.add_subplot(1,2,2,projection='3d')
+        ax.plot(center[0], center[1], center[2], 'bo')
+        ax.quiver(center[0], center[1], center[2], tangent[0], tangent[1], tangent[2], length=radius, normalize=True, color='r')
+        ax.scatter(spawnpoints[:,0,waypointIndex], spawnpoints[:,1,waypointIndex], spawnpoints[:,2,waypointIndex], 'go')
+        ax.plot_surface(x, y, z, cmap='viridis', alpha=0.5)
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        ax.set_box_aspect([1,1,1])
+        ax.set_title(f"Waypoint {waypointIndex} FOV and Random Spawn Points")
+        ax.azim = -50
+        ax.elev = 20
+        plt.show()
