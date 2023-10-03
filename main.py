@@ -13,12 +13,12 @@ def main():
         playerStart = unrealStart, 
         playerEnd = unrealEnd, 
         surveryAltitude = 40.0, 
-        ySweep=50,
-        sideSweeps = 10,
+        ySweep=0,
+        sideSweeps = 0,
         zSweep = 0, 
         altSweeps = 0, 
         numWaypoints = 1200,
-        plotFlag = True,
+        plotFlag = False,
         )
     
     # Create a thread for flying the waypoints

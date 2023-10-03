@@ -143,9 +143,11 @@ def flyWaypoints(waypoints, playerSpeed):
     print("connecting...")
     client = airsim.MultirotorClient()
     client.confirmConnection()
+    print("connected!")
     client.enableApiControl(True)
     client.armDisarm(True)
-    print("connected!")
+    print("arming...")
+    print(f"Vehicle Name: {client.getMultirotorState().vehicle_name}")
 
     # takeoff
     client.takeoffAsync().join()
@@ -163,14 +165,33 @@ def flyWaypoints(waypoints, playerSpeed):
         adaptive_lookahead = 1
         ).join()
 
+    # move to the end of the path
+    print("moving to end of path...")
+    client.moveToPositionAsync(
+        x=waypoints[-1].x_val, 
+        y=waypoints[-1].y_val, 
+        z=waypoints[-1].z_val, 
+        velocity=5,
+        timeout_sec=10,
+        drivetrain = airsim.DrivetrainType.MaxDegreeOfFreedom, 
+        yaw_mode = airsim.YawMode(True,2), 
+        lookahead = -1, 
+        adaptive_lookahead = 1
+        ).join()
     # land
+    print("landing...")
     client.landAsync().join()
+    # Confirm landed before disconnecting
+    time.sleep(10)
     print("landed!")
 
-     # cleanup
+
+    """     
+    # cleanup
     client.armDisarm(False)
     client.enableApiControl(False)
     print("disconnected!")
+    """
 
     return
 
@@ -230,22 +251,8 @@ def pullFrames(numFrames: int, timeInterval: float, saveFolder: str):
         # Wait for the specified time interval before getting the next set of images
         time.sleep(timeInterval)
 
-def unreal2NED(unrealCoordinates):
-    """
-    Converts Unreal coordinates to North-East-Down (NED) coordinates.
+    return
 
-    Args:
-        unrealCoordinates (numpy.ndarray): Unreal NEU coordinates.
-    Returns:
-        numpy.ndarray: Drone NED coordinates.
-    """
-    nedCoordinates = np.array([
-        unrealCoordinates[0]/100,
-        unrealCoordinates[1]/100,
-        -unrealCoordinates[2]/100
-    ])
-
-    return nedCoordinates
 def getPathTangents(path):
     tangents = np.zeros(path.shape)
     tangents[0] = path[1] - path[0]
