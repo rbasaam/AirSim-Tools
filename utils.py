@@ -9,30 +9,30 @@ import os
 def surveryFlightPath(
         playerStart: np.ndarray, 
         playerEnd: np.ndarray, 
-        surveryAltitude: float, 
-        ySweep: float, 
-        sideSweeps: float, 
-        zSweep: float, 
-        altSweeps: float, 
-        numWaypoints: int, 
+        surveryAltitude: np.float32, 
+        ySweep: np.float32, 
+        sideSweeps: np.float32, 
+        zSweep: np.float32, 
+        altSweeps: np.float32, 
+        numWaypoints: np.uint8, 
         plotFlag=False
         ):
     """
-    Generates a flight path for surveying an area between two points.
+    Generates a flight path for surveying an area between two ponp.uint8s.
 
     Args:
         playerStart (numpy.ndarray): Starting position of the player.
         playerEnd (numpy.ndarray): Ending position of the player.
-        surveryAltitude (float): Altitude at which the survey is conducted.
-        ySweep (float): Amplitude of the sinusoidal sweep in the y-direction.
-        sideSweeps (float): Number of side sweeps to perform.
-        zSweep (float): Amplitude of the sinusoidal sweep in the z-direction.
-        altSweeps (float): Number of altitude sweeps to perform.
-        numWaypoints (int): Number of waypoints to generate.
+        surveryAltitude (np.float32): Altitude at which the survey is conducted.
+        ySweep (np.float32): Amplitude of the sinusoidal sweep in the y-direction.
+        sideSweeps (np.float32): Number of side sweeps to perform.
+        zSweep (np.float32): Amplitude of the sinusoidal sweep in the z-direction.
+        altSweeps (np.float32): Number of altitude sweeps to perform.
+        numWaypoints (np.uint8): Number of waypoints to generate.
         plotFlag (bool, optional): Flag indicating whether to plot the flight path. Defaults to False.
 
     Returns:
-        airsim.vector3r: Array of waypoints representing the flight path.
+        np.ndarray: Array of waypoints representing the flight path.
     """
     # Convert to meters
     playerStart = playerStart/100
@@ -121,23 +121,22 @@ def surveryFlightPath(
         ax.set_title('Flight Path Drone Frame')
 
         plt.show()
-
-    # convert to airsim.Vector3r
-    waypoints = [airsim.Vector3r(x[0], x[1], x[2]) for x in waypoints]
         
     return waypoints
 
-def flyWaypoints(waypoints, playerSpeed):
+def flyWaypoints(waypoints: np.ndarray, playerSpeed: np.float32):
     """
     Flies the multirotor along a given set of waypoints.
 
     Args:
         waypoints (numpy.ndarray): Array of waypoints representing the flight path.
-        playerSpeed (float): Speed at which the multirotor should fly.
+        playerSpeed (np.float32): Speed at which the multirotor should fly.
 
     Returns:
         None
     """
+    # convert to airsim.Vector3r
+    waypoints = [airsim.Vector3r(x[0], x[1], x[2]) for x in waypoints]
 
     # connect to airsim
     print("connecting...")
@@ -147,7 +146,8 @@ def flyWaypoints(waypoints, playerSpeed):
     client.enableApiControl(True)
     client.armDisarm(True)
     print("arming...")
-    print(f"Vehicle Name: {client.getMultirotorState().vehicle_name}")
+    print(f"FOV: {client.simGetCurrentFieldOfView(camera_name='0')}")
+    print(f"Vehicle Name: {client.listVehicles()[0]}")
 
     # takeoff
     client.takeoffAsync().join()
@@ -162,7 +162,8 @@ def flyWaypoints(waypoints, playerSpeed):
         drivetrain = airsim.DrivetrainType.MaxDegreeOfFreedom, 
         yaw_mode = airsim.YawMode(True,2), 
         lookahead = -1, 
-        adaptive_lookahead = 1
+        adaptive_lookahead = 1,
+        vehicle_name = 'SimpleFlight'
         ).join()
 
     # move to the end of the path
@@ -176,32 +177,40 @@ def flyWaypoints(waypoints, playerSpeed):
         drivetrain = airsim.DrivetrainType.MaxDegreeOfFreedom, 
         yaw_mode = airsim.YawMode(True,2), 
         lookahead = -1, 
-        adaptive_lookahead = 1
+        adaptive_lookahead = 1,
+        vehicle_name = 'SimpleFlight'
         ).join()
     # land
     print("landing...")
-    client.landAsync().join()
+    client.landAsync(
+        timeout_sec=10,
+        vehicle_name = 'SimpleFlight'
+    ).join()
     # Confirm landed before disconnecting
     time.sleep(10)
     print("landed!")
-
+    time.sleep(5)
 
     """     
     # cleanup
+    print("disarming...")
     client.armDisarm(False)
+    print("disarmed!")
+
+    print("disconnecting...")
     client.enableApiControl(False)
-    print("disconnected!")
+    print("disconnected!")   
     """
 
     return
 
-def pullFrames(numFrames: int, timeInterval: float, saveFolder: str):
+def pullFrames(numFrames: np.uint8, timeInterval: np.float32, saveFolder: str):
     """
     Pulls a specified number of frames from the AirSim simulator and saves them to the specified folder.
 
     Args:
         numFrames (int): Number of frames to pull.
-        timeInterval (float): Time interval between each frame pull.
+        timeInterval (np.float32): Time interval between each frame pull.
         saveFolder (str): Path to the folder where the frames will be saved.
 
     Returns:
@@ -253,14 +262,90 @@ def pullFrames(numFrames: int, timeInterval: float, saveFolder: str):
 
     return
 
-def getPathTangents(path):
-    tangents = np.zeros(path.shape)
-    tangents[0] = path[1] - path[0]
-    tangents[1:-1] = path[2:] - path[:-2]
-    tangents[-1] = path[-1] - path[-2]
-    return tangents
+def droneSpawn(waypoints: np.ndarray, numDrones: np.uint8, FOV: np.array, plotFlag=False):
+    """
+    Generates spawn points for a specified number of drones at each waypoint within the chief drones FOV.
 
-def spherical2cartesian(r, theta, phi):
+    Args:
+        waypoints (numpy.ndarray): Array of waypoints representing the flight path.
+        numDrones (np.uint8): Number of drones to spawn at each waypoint.
+        FOV (np.array): Field of view of the chief drone in the format [range, theta, phi].
+        plotFlag (bool, optional): Flag indicating whether to plot the spawn points. Defaults to False.
+
+    Returns:
+        np.ndarray: Array of spawn points for each drone at each waypoint.
+    """
+    # Calculate Tangent Vectors for each waypoint
+    tangentVectors = getPathTangents(waypoints)
+    # Initialize Spawn Points Array
+    spawnPoints = np.zeros((numDrones, 3, waypoints.shape[0]))
+
+    # Generate random spawn points for each waypoint
+    for wp in range(len(waypoints)):
+        # Generate random ranges
+        ranges = FOV[0]*np.random.rand(numDrones)
+        # Generate random Theta Angles centered around the tangent vector
+        tangentTheta = np.arctan2(tangentVectors[wp,1], tangentVectors[wp,0])
+        thetaRange = FOV[1]/2
+        thetas = tangentTheta + np.deg2rad(-thetaRange + (np.random.rand(numDrones)*thetaRange*2))
+        # Generate random Phi Angles centered around the tangent vector
+        tangentPhi = np.arctan2(tangentVectors[wp, 2], np.sqrt(tangentVectors[wp, 0]**2 + tangentVectors[wp, 1]**2))
+        phiRange = FOV[2] / 2  
+        phis = np.pi / 2 + tangentPhi + np.deg2rad(-phiRange + (2 * phiRange * np.random.rand(numDrones)))
+        # Convert spherical coordinates to Cartesian and add them to waypoints
+        for drone in range(numDrones):
+            spawnPoints[drone,:,wp] = waypoints[wp] + spherical2cartesian(ranges[drone], thetas[drone], phis[drone])
+
+    if plotFlag:
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1, projection='3d')
+        ax.plot(waypoints[:,0], waypoints[:,1], waypoints[:,2])
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        ax.text(waypoints[0,0], waypoints[0,1], waypoints[0,2], 'pathStart')
+        ax.text(waypoints[-1,0], waypoints[-1,1], waypoints[-1,2], 'pathEnd')        
+        ax.azim = -80 
+        ax.elev = 18 
+        ax.set_title('Flight Path World Frame')
+
+        for wp in range(len(waypoints)):
+            for drone in range(numDrones):
+                ax.scatter(spawnPoints[drone,0,wp], spawnPoints[drone,1,wp], spawnPoints[drone,2,wp], color='r', marker='o')
+        plt.show()
+
+    return spawnPoints
+
+def getPathTangents(waypoints: np.ndarray):
+    """
+    Calculates the tangent vectors for each waypoint in a given path.
+
+    Args:
+        waypoints (numpy.ndarray): Array of waypoints representing the flight path.
+
+    Returns:
+        np.ndarray: Array of tangent vectors for each waypoint.
+    """
+    # Calculate Tangent Vectors for each waypoint
+    tangentVectors = np.diff(waypoints, axis=0)
+    tangentVectors = np.concatenate((tangentVectors, tangentVectors[-1:]), axis=0)
+
+    # Normalize Tangent Vectors
+    tangentVectors = tangentVectors/np.linalg.norm(tangentVectors, axis=1)[:,None]
+    return tangentVectors
+
+def spherical2cartesian(r: np.float32, theta: np.float32, phi: np.float32):
+    """
+    Converts spherical coordinates to Cartesian coordinates.
+
+    Args:
+        r (np.float32): Radius.
+        theta (np.float32): Theta angle.
+        phi (np.float32): Phi angle.
+
+    Returns:
+        np.ndarray: Array of Cartesian coordinates.
+    """
     x = r * np.cos(theta) * np.sin(phi)
     y = r * np.sin(theta) * np.sin(phi)
     z = r * np.cos(phi)

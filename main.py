@@ -8,6 +8,7 @@ SAVE_IMGS = False
 def main():
     unrealStart = np.array([[-18045, 24560, 320]])
     unrealEnd = np.array([[3000, 5000, -430]])
+
     # generate the path
     waypoints = surveryFlightPath(
         playerStart = unrealStart, 
@@ -21,6 +22,14 @@ def main():
         plotFlag = False,
         )
     
+    # calculate spawn points for children drone actors
+    spawnPoints = droneSpawn(
+        waypoints=waypoints,
+        numDrones=5,
+        FOV=np.array([20, 90, 60]),
+        plotFlag=True,
+    ) 
+
     # Create a thread for flying the waypoints
     playerSpeed = 20.0
     fly_thread = threading.Thread(target=flyWaypoints, args=(waypoints, playerSpeed))
