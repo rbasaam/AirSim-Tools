@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import os
-
+import pprint
 
 def surveryFlightPath(
         playerStart: np.ndarray, 
@@ -144,6 +144,10 @@ def flyWaypoints(waypoints: np.ndarray, playerSpeed: np.float32):
     print(f"FOV: {client.simGetCurrentFieldOfView(camera_name='0')}")
     print(f"Vehicle Name: {client.listVehicles()[0]}")
 
+    state = client.getMultirotorState(vehicle_name='SimpleFlight')
+    s = pprint.pformat(state)
+    print("state: %s" % s)
+
     # takeoff
     client.takeoffAsync().join()
     print("took off!")
@@ -163,6 +167,7 @@ def flyWaypoints(waypoints: np.ndarray, playerSpeed: np.float32):
 
     # move to the end of the path
     print("moving to end of path...")
+
     client.moveToPositionAsync(
         x=waypoints[-1].x_val, 
         y=waypoints[-1].y_val, 
@@ -174,7 +179,18 @@ def flyWaypoints(waypoints: np.ndarray, playerSpeed: np.float32):
         lookahead = -1, 
         adaptive_lookahead = 1,
         vehicle_name = 'SimpleFlight'
+        ).join()   
+     
+    client.moveByVelocityZAsync(
+        vx=0,
+        vy=0,
+        z=waypoints[-1].z_val+40,
+        duration=10,
+        drivetrain=airsim.DrivetrainType.MaxDegreeOfFreedom,
+        yaw_mode=airsim.YawMode(False,0),
+        vehicle_name = 'SimpleFlight'
         ).join()
+    
     # land
     print("landing...")
     client.landAsync(
@@ -242,9 +258,9 @@ def pullFrames(numFrames: np.uint8, timeInterval: np.float32, saveFolder: str):
         ])
 
         # Save the images
-        airsim.write_file(os.path.join(povFolder, f"pov_{i}.png"), responses[0].image_data_uint8)
-        airsim.write_file(os.path.join(depthFolder, f"depth_{i}.png"), responses[1].image_data_uint8)
-        airsim.write_file(os.path.join(maskFolder, f"mask_{i}.png"), responses[2].image_data_uint8)
+        airsim.write_file(os.path.join(povFolder, f"pov_{imageIndex+i}.png"), responses[0].image_data_uint8)
+        airsim.write_file(os.path.join(depthFolder, f"depth_{imageIndex+i}.png"), responses[1].image_data_uint8)
+        airsim.write_file(os.path.join(maskFolder, f"mask_{imageIndex+i}.png"), responses[2].image_data_uint8)
 
         # Print the saved image names and folders
         print(f"Saved Image: {pov_img_name  } to {povFolder}")

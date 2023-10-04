@@ -3,12 +3,14 @@ import numpy as np
 import threading
 
 
-SAVE_IMGS = False
+SAVE_IMGS = True
 
 def main():
     # Define the start and end positions in Unreal coordinates
-    unrealStart = np.array([[-18045, 24560, 320]])
-    unrealEnd = np.array([[3000, 5000, -430]])
+    unrealStart = np.array([[-18045, 24560, 320]]) # Baseball Diamond
+    # unrealEnd = np.array([[3000, 5000, -430]]) # Lake
+    # unrealEnd = np.array([[-9400, -38390, 90]]) # Tennis Courts
+    unrealEnd = np.array([[-84820, -15650, 10]]) # Far Field
     # Define the FOV
     fov = np.array([10, 90, 60])
 
@@ -18,10 +20,10 @@ def main():
         playerEnd = unrealEnd, 
         surveryAltitude = 40.0, 
         ySweep=20,
-        sideSweeps = 4,
+        sideSweeps = 3,
         zSweep = 0, 
         altSweeps = 0, 
-        numWaypoints = 100,
+        numWaypoints = 1000,
         plotFlag = False,
         )
     
@@ -30,7 +32,7 @@ def main():
         waypoints=wayPoints,
         numDrones=5,
         FOV=fov,
-        plotFlag=True,
+        plotFlag=False,
     ) 
 
     # Create a thread for flying the waypoints
