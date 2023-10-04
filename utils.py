@@ -1,9 +1,6 @@
 import airsim
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-import plotly.graph_objects as go
 import time
 import os
 
@@ -89,7 +86,7 @@ def surveryFlightPath(
             # End
             playerTrip,
         ))
-
+        # Plot the flight path in the world frame
         fig = plt.figure()
         ax = fig.add_subplot(1, 2, 1, projection='3d')
         ax.plot(globalFlight[:,0], globalFlight[:,1], globalFlight[:,2])
@@ -104,11 +101,7 @@ def surveryFlightPath(
         ax.elev = 18 
         ax.set_title('Flight Path World Frame')
 
-        print(f"Player Start: {globalFlight[0,:]}")
-        print(f"Path Start: {globalFlight[1,:]}")
-        print(f"Path End: {globalFlight[-2,:]}")
-        print(f"Player End: {globalFlight[-1,:]}")
-
+        # Plot the flight path in the drone frame
         ax = fig.add_subplot(1, 2, 2, projection='3d')
         ax.plot(localFlight[:,0], localFlight[:,1], localFlight[:,2])
         ax.set_xlabel('X')
