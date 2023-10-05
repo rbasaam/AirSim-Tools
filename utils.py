@@ -18,13 +18,29 @@ def POIPath(
     """
     Generate a path that visits a set of POIs.
 
+    Args:
+        POIs (numpy.ndarray): Array of POI coordinates.
+        POI_Labels (list): List of POI labels.
+        surveyAltitude (np.float32): Altitude at which to survey the POIs.
+        ySweep (np.float32): Amplitude of the side-to-side sweep.
+        sideSweeps (np.float32): Number of side-to-side sweeps.
+        numWaypoints (np.uint8): Number of waypoints per segment.
+        plotFlag (bool, optional): Flag indicating whether to plot the path. Defaults to False.
+
+    Returns:
+        np.ndarray: Array of waypoints representing the survey path.
     """ 
+    # Reset the POIs to the origin and convert to meters in the drone Frame
     dronePOIs = (POIs - POIs[0,:])*np.array([0.01, 0.01, -0.01])
+    # Compute the direction of each path segment between POIs
     segmentDirections = np.diff(dronePOIs, axis=0)
+    # Initialize the path array
     numSegments = segmentDirections.shape[0]
     dronePath = np.zeros((numWaypoints, 3, numSegments))
     droneWaypoints = np.zeros((numWaypoints*numSegments, 3))
+    # Compute the path between each POI and the next
     for segment in range(numSegments):
+        # Generate the path with at least 1000 waypoints
         if numWaypoints > 1000:
             xx = np.linspace(dronePOIs[segment,0], dronePOIs[segment+1,0], numWaypoints)
             yy = np.linspace(dronePOIs[segment,1], dronePOIs[segment+1,1], numWaypoints)+ySweep*np.sin((xx/segmentDirections[segment,0])*2*np.pi*sideSweeps)
@@ -37,36 +53,9 @@ def POIPath(
         waypoints = np.array([xx, yy, zz]).T
         indices = np.linspace(0, waypoints.shape[0]-1, numWaypoints).astype(int)
         waypoints = waypoints[indices]
-        dronePath[:,:,segment] = waypoints
         droneWaypoints[segment*numWaypoints:(segment+1)*numWaypoints,:] = waypoints
 
     if plotFlag:
-        fig = plt.figure()
-
-        ax = fig.add_subplot(131, projection='3d')
-        ax.scatter(POIs[:,0], POIs[:,1], POIs[:,2], c='r', marker='o')
-        for i in range(len(segmentDirections)):
-            ax.quiver(POIs[i,0], POIs[i,1], POIs[i,2], segmentDirections[i,0]*100, segmentDirections[i,1]*100, segmentDirections[i,2]*-100, color='b', length=0.99, arrow_length_ratio=0.01)
-        for i, text in enumerate(POI_Labels):
-            ax.text(POIs[i,0], POIs[i,1], POIs[i,2], text)
-        ax.azim = 150
-        ax.elev = -150
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-
-        ax2 = fig.add_subplot(132, projection='3d')
-        ax2.scatter(dronePOIs[:,0], dronePOIs[:,1], dronePOIs[:,2], c='r', marker='o')
-        for i, text in enumerate(POI_Labels):
-            ax2.text(dronePOIs[i,0], dronePOIs[i,1], dronePOIs[i,2], text)
-        for segment in range(numSegments):
-            ax2.plot(dronePath[:,0,segment], dronePath[:,1,segment], dronePath[:,2,segment])
-        ax2.azim = -120
-        ax2.elev = -120
-        ax2.set_xlabel('X')
-        ax2.set_ylabel('Y')
-        ax2.set_zlabel('Z')
-
         poiPath = np.concatenate(
             (
                 dronePOIs[0,:].reshape(1,3),
@@ -75,134 +64,22 @@ def POIPath(
             )
         )
 
-        ax3 = fig.add_subplot(133, projection='3d')
-        ax3.plot(poiPath[:,0], poiPath[:,1], poiPath[:,2], c='b', marker='.')
-        ax3.scatter(dronePOIs[:,0], dronePOIs[:,1], dronePOIs[:,2], c='r', marker='o')
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot(poiPath[:,0], poiPath[:,1], poiPath[:,2], c='b', marker='.')
+        ax.scatter(dronePOIs[:,0], dronePOIs[:,1], dronePOIs[:,2], c='r', marker='o')
         for i, text in enumerate(POI_Labels):
-            ax3.text(dronePOIs[i,0], dronePOIs[i,1], dronePOIs[i,2], text)
-        ax3.azim = -120
-        ax3.elev = -120
-        ax3.set_xlabel('X')
-        ax3.set_ylabel('Y')
-        ax3.set_zlabel('Z')
-
+            ax.text(dronePOIs[i,0], dronePOIs[i,1], dronePOIs[i,2], text)
+        ax.azim = -120
+        ax.elev = -120
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        ax.set_box_aspect([1,1,1])
+        ax.set_title('POI Survey Path in Drone Frame')
         plt.show()
 
     return droneWaypoints
-
-def surveryFlightPath(
-        playerStart: np.ndarray, 
-        playerEnd: np.ndarray, 
-        surveryAltitude: np.float32, 
-        ySweep: np.float32, 
-        sideSweeps: np.float32, 
-        zSweep: np.float32, 
-        altSweeps: np.float32, 
-        numWaypoints: np.uint8, 
-        plotFlag=False
-    ):
-    """
-    Generates a flight path for surveying an area between two points.
-
-    Args:
-        playerStart (numpy.ndarray): Starting position of the player.
-        playerEnd (numpy.ndarray): Ending position of the player.
-        surveryAltitude (np.float32): Altitude at which the survey is conducted.
-        ySweep (np.float32): Amplitude of the sinusoidal sweep in the y-direction.
-        sideSweeps (np.float32): Number of side sweeps to perform.
-        zSweep (np.float32): Amplitude of the sinusoidal sweep in the z-direction.
-        altSweeps (np.float32): Number of altitude sweeps to perform.
-        numWaypoints (np.uint8): Number of waypoints to generate.
-        plotFlag (bool, optional): Flag indicating whether to plot the flight path. Defaults to False.
-
-    Returns:
-        np.ndarray: Array of waypoints representing the flight path.
-    """
-    # Convert to meters
-    playerStart = playerStart/100
-    playerEnd = playerEnd/100
-    playerTrip = playerEnd - playerStart
-
-    # Convert to Drone Frame
-    playerTrip = playerTrip*np.array([1, 1, -1])
-
-    # generate the path wrt Drone Frame
-    if numWaypoints>1000:
-        xx = np.linspace(0, playerTrip[0,0], numWaypoints)
-        yy = np.linspace(0, playerTrip[0,1], numWaypoints)+ySweep*np.sin((xx/playerTrip[0,0])*2*np.pi*sideSweeps)
-        zz = np.linspace(0, playerTrip[0,2], numWaypoints)-surveryAltitude-zSweep*np.sin((xx/playerTrip[0,0])*2*np.pi*altSweeps)
-    else:
-        xx = np.linspace(0, playerTrip[0,0], 1000)
-        yy = np.linspace(0, playerTrip[0,1], 1000)+ySweep*np.sin((xx/playerTrip[0,0])*2*np.pi*sideSweeps)
-        zz = np.linspace(0, playerTrip[0,2], 1000)-surveryAltitude-zSweep*np.sin((xx/playerTrip[0,0])*2*np.pi*altSweeps)
-    waypoints = np.array([xx, yy, zz]).T 
-    
-    # convert to path wrt to World Frame
-    globalPath = (waypoints*np.array([1, 1, -1]) + playerStart)*100
-
-    # select waypoints from the path
-    indices = np.linspace(0, waypoints.shape[0]-1, numWaypoints).astype(int)
-    waypoints = waypoints[indices]
-
-    # plot the path
-    if plotFlag:
-        globalFlight = np.concatenate((
-            # start
-            playerStart*100,
-            # hover
-            playerStart*100 + np.array([[0, 0, surveryAltitude]]),
-            # path
-            globalPath,
-            # hover
-            playerEnd*100 + np.array([[0, 0, surveryAltitude]]),
-            # end
-            playerEnd*100,
-        ))
-
-        localFlight = np.concatenate((
-            # start
-            np.array([[0, 0, 0]]),
-            # hover
-            np.array([[0, 0, -surveryAltitude]]),
-            # path
-            waypoints,
-            # hover
-            playerTrip + np.array([[0, 0, -surveryAltitude]]),
-            # End
-            playerTrip,
-        ))
-        # Plot the flight path in the world frame
-        fig = plt.figure()
-        ax = fig.add_subplot(1, 2, 1, projection='3d')
-        ax.plot(globalFlight[:,0], globalFlight[:,1], globalFlight[:,2])
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        ax.text(globalFlight[0,0], globalFlight[0,1], globalFlight[0,2], 'playerStart')
-        ax.text(globalFlight[1,0], globalFlight[1,1], globalFlight[1,2], 'pathStart')
-        ax.text(globalFlight[-2,0], globalFlight[-2,1], globalFlight[-2,2], 'pathEnd')        
-        ax.text(globalFlight[-1,0], globalFlight[-1,1], globalFlight[-1,2], 'playerEnd')
-        ax.azim = -80 
-        ax.elev = 18 
-        ax.set_title('Flight Path World Frame')
-
-        # Plot the flight path in the drone frame
-        ax = fig.add_subplot(1, 2, 2, projection='3d')
-        ax.plot(localFlight[:,0], localFlight[:,1], localFlight[:,2])
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        ax.text(localFlight[0,0], localFlight[0,1], localFlight[0,2], 'playerStart')
-        ax.text(localFlight[1,0], localFlight[1,1], localFlight[1,2], 'pathStart')
-        ax.text(localFlight[-2,0], localFlight[-2,1], localFlight[-2,2], 'pathEnd')        
-        ax.text(localFlight[-1,0], localFlight[-1,1], localFlight[-1,2], 'playerEnd') 
-        ax.azim = -130 
-        ax.elev = -160 
-        ax.set_title('Flight Path Drone Frame')
-
-        plt.show()
-        
-        return waypoints
 
 def flyWaypoints(waypoints: np.ndarray, playerSpeed: np.float32):
     """
@@ -498,4 +375,3 @@ def plotFOVs(waypoints: np.ndarray, spawnpoints: np.ndarray, FOV: np.array, wayp
         ax.elev = 20
         plt.show()
     return
-

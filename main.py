@@ -34,9 +34,9 @@ def main():
         POI_Labels=poiLabels,
         surveyAltitude=30,
         ySweep=20,
-        sideSweeps=3,
-        numWaypoints=500,
-        plotFlag=True
+        sideSweeps=1,
+        numWaypoints=100,
+        plotFlag=False,
     )
     
     """

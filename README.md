@@ -22,39 +22,81 @@ Install the required dependencies:
 
 The `utils.py` module provides several utility functions for working with the AirSim simulator. Here are the available functions:
 
-#### `surveryFlightPath(playerStart, playerEnd, surveryAltitude, ySweep, sideSweeps, zSweep, altSweeps, numWaypoints, plotFlag=False)`
+#### `POIPath(POIs, POI_Labels, surveyAltitude, ySweep, sideSweeps, numWaypoints, plotFlag=False)`
 
-Generates a flight path for surveying an area between two points.
+Generates a path that visits a set of Points of Interest (POIs).
 
-- `playerStart`: Starting position of the player (numpy.ndarray).
-- `playerEnd`: Ending position of the player (numpy.ndarray).
-- `surveryAltitude`: Altitude at which the survey is conducted (float).
-- `ySweep`: Amplitude of the sinusoidal sweep in the y-direction (float).
-- `sideSweeps`: Number of side sweeps to perform (float).
-- `zSweep`: Amplitude of the sinusoidal sweep in the z-direction (float).
-- `altSweeps`: Number of altitude sweeps to perform (float).
-- `numWaypoints`: Number of waypoints to generate (int).
-- `plotFlag` (optional): Flag indicating whether to plot the flight path (bool, default=False).
+- `POIs`: Array of POI coordinates (numpy.ndarray).
+- `POI_Labels`: List of POI labels (list).
+- `surveyAltitude`: Altitude at which to survey the POIs (np.float32).
+- `ySweep`: Amplitude of the side-to-side sweep (np.float32).
+- `sideSweeps`: Number of side-to-side sweeps (np.float32).
+- `numWaypoints`: Number of waypoints per segment (np.uint8).
+- `plotFlag` (optional): Flag indicating whether to plot the path (bool, default=False).
 
 Returns
 
-- `waypoints`: List of airsim.Vector3r waypoints representing the flight path.
+- `droneWaypoints`: Array of waypoints representing the survey path (np.ndarray).
 
 #### `flyWaypoints(waypoints, playerSpeed)`
 
 Flies the multirotor along a given set of waypoints.
 
 - `waypoints`: Array of waypoints representing the flight path (numpy.ndarray).
-- `playerSpeed`: Speed at which the multirotor should fly (float).
+- `playerSpeed`: Speed at which the multirotor should fly (np.float32).
 
 #### `pullFrames(numFrames, timeInterval, saveFolder)`
 
 Pulls a specified number of frames from the AirSim simulator and saves them to the specified folder.
 
-- `numFrames`: Number of frames to pull (int).
-- `timeInterval`: Time interval between each frame pull (float).
+- `numFrames`: Number of frames to pull (np.uint8).
+- `timeInterval`: Time interval between each frame pull (np.float32).
 - `saveFolder`: Path to the folder where the frames will be saved (str).
 
+#### `droneSpawn(waypoints, numDrones, FOV, plotFlag=False)`
+
+Generates spawn points for a specified number of drones at each waypoint within the chief drone's Field of View (FOV).
+
+- `waypoints`: Array of waypoints representing the flight path (numpy.ndarray).
+- `numDrones`: Number of drones to spawn at each waypoint (np.uint8).
+- `FOV`: Field of view of the chief drone in the format [range, theta, phi] (np.array).
+- `plotFlag` (optional): Flag indicating whether to plot the spawn points (bool, default=False).
+
+Returns
+
+- `spawnPoints`: Array of spawn points for each drone at each waypoint (np.ndarray).
+
+#### `getPathTangents(waypoints)`
+
+Calculates the tangent vectors for each waypoint in a given path.
+
+- `waypoints`: Array of waypoints representing the flight path (numpy.ndarray).
+
+Returns
+
+- `tangentVectors`: Array of tangent vectors for each waypoint (np.ndarray).
+
+#### `spherical2cartesian(r, theta, phi)`
+
+Converts spherical coordinates to Cartesian coordinates.
+
+- `r`: Radius (np.float32).
+- `theta`: Theta angle (np.float32).
+- `phi`: Phi angle (np.float32).
+
+Returns
+
+- `Cartesian coordinates`: Array of Cartesian coordinates (np.ndarray).
+
+#### `plotFOVs(waypoints, spawnpoints, FOV, waypointIndex, fig=None)`
+
+Plots the Field of View (FOV) for a specified waypoint and the spawn points for the drones at that waypoint.
+
+- `waypoints`: Array of waypoints representing the flight path (numpy.ndarray).
+- `spawnpoints`: Array of spawn points for each drone at each waypoint (np.ndarray).
+- `FOV`: Field of view of the chief drone in the format [range, theta, phi] (np.array).
+- `waypointIndex`: Index of the waypoint for which to plot the FOV and spawn points (np.uint8).
+- `fig` (optional): Matplotlib figure object to which to add the plot (matplotlib.figure.Figure, default=None).
 ### `main.py`
 
 The `main.py` script demonstrates the usage of the functions in `utils.py`. To run the script, execute the following command:
