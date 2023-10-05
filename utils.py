@@ -228,8 +228,7 @@ def pullFrames(numFrames: np.uint8, timeInterval: np.float32, saveFolder: str):
         # Print the saved image names and folders
         print(f"Saved Image: {pov_img_name  } to {povFolder}")
         print(f"Saved Image: {depth_img_name} to {depthFolder}")
-        print(f"Saved Image: {mask_img_name } to {maskFolder}")
-
+        print(f"Saved Image: {mask_img_name } to {maskFolder} \n")
 
         # Wait for the specified time interval before getting the next set of images
         time.sleep(timeInterval)
