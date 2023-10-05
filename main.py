@@ -14,7 +14,7 @@ def main():
 
     worldPOIs = np.concatenate(
         (
-        baseballDiamond, 
+            baseballDiamond, 
             lakeFountain, 
             tennisCourt, 
             farField, 
@@ -39,10 +39,6 @@ def main():
         plotFlag=True
     )
     
-    plt.figure()
-    plt.plot(droneWaypoints[:,0], droneWaypoints[:,1], droneWaypoints[:,2],'k.')
-    plt.show()
-
     """
     # Define the FOV
     fov = np.array([10, 90, 60])

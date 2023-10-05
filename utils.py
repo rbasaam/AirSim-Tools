@@ -23,6 +23,7 @@ def POIPath(
     segmentDirections = np.diff(dronePOIs, axis=0)
     numSegments = segmentDirections.shape[0]
     dronePath = np.zeros((numWaypoints, 3, numSegments))
+    droneWaypoints = np.zeros((numWaypoints*numSegments, 3))
     for segment in range(numSegments):
         if numWaypoints > 1000:
             xx = np.linspace(dronePOIs[segment,0], dronePOIs[segment+1,0], numWaypoints)
@@ -37,35 +38,55 @@ def POIPath(
         indices = np.linspace(0, waypoints.shape[0]-1, numWaypoints).astype(int)
         waypoints = waypoints[indices]
         dronePath[:,:,segment] = waypoints
-    droneWaypoints = dronePath.reshape(numWaypoints*numSegments, 3)
+        droneWaypoints[segment*numWaypoints:(segment+1)*numWaypoints,:] = waypoints
 
     if plotFlag:
         fig = plt.figure()
 
-    ax = fig.add_subplot(121, projection='3d')
-    ax.scatter(POIs[:,0], POIs[:,1], POIs[:,2], c='r', marker='o')
-    for i in range(len(segmentDirections)):
-        ax.quiver(POIs[i,0], POIs[i,1], POIs[i,2], segmentDirections[i,0]*100, segmentDirections[i,1]*100, segmentDirections[i,2]*-100, color='b', length=0.99, arrow_length_ratio=0.01)
-    for i, text in enumerate(POI_Labels):
-        ax.text(POIs[i,0], POIs[i,1], POIs[i,2], text)
-    ax.azim = 150
-    ax.elev = -150
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
+        ax = fig.add_subplot(131, projection='3d')
+        ax.scatter(POIs[:,0], POIs[:,1], POIs[:,2], c='r', marker='o')
+        for i in range(len(segmentDirections)):
+            ax.quiver(POIs[i,0], POIs[i,1], POIs[i,2], segmentDirections[i,0]*100, segmentDirections[i,1]*100, segmentDirections[i,2]*-100, color='b', length=0.99, arrow_length_ratio=0.01)
+        for i, text in enumerate(POI_Labels):
+            ax.text(POIs[i,0], POIs[i,1], POIs[i,2], text)
+        ax.azim = 150
+        ax.elev = -150
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
 
-    ax2 = fig.add_subplot(122, projection='3d')
-    ax2.scatter(dronePOIs[:,0], dronePOIs[:,1], dronePOIs[:,2], c='r', marker='o')
-    for i, text in enumerate(POI_Labels):
-        ax2.text(dronePOIs[i,0], dronePOIs[i,1], dronePOIs[i,2], text)
-    for segment in range(numSegments):
-        ax2.plot(dronePath[:,0,segment], dronePath[:,1,segment], dronePath[:,2,segment])
-    ax2.azim = -120
-    ax2.elev = -120
-    ax2.set_xlabel('X')
-    ax2.set_ylabel('Y')
-    ax2.set_zlabel('Z')
-    plt.show()
+        ax2 = fig.add_subplot(132, projection='3d')
+        ax2.scatter(dronePOIs[:,0], dronePOIs[:,1], dronePOIs[:,2], c='r', marker='o')
+        for i, text in enumerate(POI_Labels):
+            ax2.text(dronePOIs[i,0], dronePOIs[i,1], dronePOIs[i,2], text)
+        for segment in range(numSegments):
+            ax2.plot(dronePath[:,0,segment], dronePath[:,1,segment], dronePath[:,2,segment])
+        ax2.azim = -120
+        ax2.elev = -120
+        ax2.set_xlabel('X')
+        ax2.set_ylabel('Y')
+        ax2.set_zlabel('Z')
+
+        poiPath = np.concatenate(
+            (
+                dronePOIs[0,:].reshape(1,3),
+                droneWaypoints,
+                dronePOIs[-1,:].reshape(1,3),
+            )
+        )
+
+        ax3 = fig.add_subplot(133, projection='3d')
+        ax3.plot(poiPath[:,0], poiPath[:,1], poiPath[:,2], c='b', marker='.')
+        ax3.scatter(dronePOIs[:,0], dronePOIs[:,1], dronePOIs[:,2], c='r', marker='o')
+        for i, text in enumerate(POI_Labels):
+            ax3.text(dronePOIs[i,0], dronePOIs[i,1], dronePOIs[i,2], text)
+        ax3.azim = -120
+        ax3.elev = -120
+        ax3.set_xlabel('X')
+        ax3.set_ylabel('Y')
+        ax3.set_zlabel('Z')
+
+        plt.show()
 
     return droneWaypoints
 
