@@ -5,6 +5,70 @@ import time
 import os
 import pprint
 
+def POIPath(
+        POIs: np.ndarray,
+        POI_Labels: list,
+        surveyAltitude: np.float32,
+        ySweep: np.float32,
+        sideSweeps: np.float32,
+        numWaypoints: np.uint8,
+        plotFlag=False
+        ):
+
+    """
+    Generate a path that visits a set of POIs.
+
+    """ 
+    dronePOIs = (POIs - POIs[0,:])*np.array([0.01, 0.01, -0.01])
+    segmentDirections = np.diff(dronePOIs, axis=0)
+    numSegments = segmentDirections.shape[0]
+    dronePath = np.zeros((numWaypoints, 3, numSegments))
+    for segment in range(numSegments):
+        if numWaypoints > 1000:
+            xx = np.linspace(dronePOIs[segment,0], dronePOIs[segment+1,0], numWaypoints)
+            yy = np.linspace(dronePOIs[segment,1], dronePOIs[segment+1,1], numWaypoints)+ySweep*np.sin((xx/segmentDirections[segment,0])*2*np.pi*sideSweeps)
+            zz = np.linspace(dronePOIs[segment,2], dronePOIs[segment+1,2], numWaypoints)-surveyAltitude
+        else:
+            xx = np.linspace(dronePOIs[segment,0], dronePOIs[segment+1,0], 1000)
+            yy = np.linspace(dronePOIs[segment,1], dronePOIs[segment+1,1], 1000)+ySweep*np.sin((xx/segmentDirections[segment,0])*2*np.pi*sideSweeps)
+            zz = np.linspace(dronePOIs[segment,2], dronePOIs[segment+1,2], 1000)-surveyAltitude
+        # select waypoints from the path
+        waypoints = np.array([xx, yy, zz]).T
+        indices = np.linspace(0, waypoints.shape[0]-1, numWaypoints).astype(int)
+        waypoints = waypoints[indices]
+        dronePath[:,:,segment] = waypoints
+    droneWaypoints = dronePath.reshape(numWaypoints*numSegments, 3)
+
+    if plotFlag:
+        fig = plt.figure()
+
+    ax = fig.add_subplot(121, projection='3d')
+    ax.scatter(POIs[:,0], POIs[:,1], POIs[:,2], c='r', marker='o')
+    for i in range(len(segmentDirections)):
+        ax.quiver(POIs[i,0], POIs[i,1], POIs[i,2], segmentDirections[i,0]*100, segmentDirections[i,1]*100, segmentDirections[i,2]*-100, color='b', length=0.99, arrow_length_ratio=0.01)
+    for i, text in enumerate(POI_Labels):
+        ax.text(POIs[i,0], POIs[i,1], POIs[i,2], text)
+    ax.azim = 150
+    ax.elev = -150
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    ax2 = fig.add_subplot(122, projection='3d')
+    ax2.scatter(dronePOIs[:,0], dronePOIs[:,1], dronePOIs[:,2], c='r', marker='o')
+    for i, text in enumerate(POI_Labels):
+        ax2.text(dronePOIs[i,0], dronePOIs[i,1], dronePOIs[i,2], text)
+    for segment in range(numSegments):
+        ax2.plot(dronePath[:,0,segment], dronePath[:,1,segment], dronePath[:,2,segment])
+    ax2.azim = -120
+    ax2.elev = -120
+    ax2.set_xlabel('X')
+    ax2.set_ylabel('Y')
+    ax2.set_zlabel('Z')
+    plt.show()
+
+    return droneWaypoints
+
 def surveryFlightPath(
         playerStart: np.ndarray, 
         playerEnd: np.ndarray, 
@@ -15,9 +79,9 @@ def surveryFlightPath(
         altSweeps: np.float32, 
         numWaypoints: np.uint8, 
         plotFlag=False
-        ):
+    ):
     """
-    Generates a flight path for surveying an area between two ponp.uint8s.
+    Generates a flight path for surveying an area between two points.
 
     Args:
         playerStart (numpy.ndarray): Starting position of the player.
@@ -117,7 +181,7 @@ def surveryFlightPath(
 
         plt.show()
         
-    return waypoints
+        return waypoints
 
 def flyWaypoints(waypoints: np.ndarray, playerSpeed: np.float32):
     """
@@ -179,7 +243,9 @@ def flyWaypoints(waypoints: np.ndarray, playerSpeed: np.float32):
         lookahead = -1, 
         adaptive_lookahead = 1,
         vehicle_name = 'SimpleFlight'
-        ).join()   
+        ).join() 
+
+    time.sleep(5)  
      
     client.moveByVelocityZAsync(
         vx=0,
@@ -191,6 +257,8 @@ def flyWaypoints(waypoints: np.ndarray, playerSpeed: np.float32):
         vehicle_name = 'SimpleFlight'
         ).join()
     
+    time.sleep(5)
+    
     # land
     print("landing...")
     client.landAsync(
@@ -198,11 +266,9 @@ def flyWaypoints(waypoints: np.ndarray, playerSpeed: np.float32):
         vehicle_name = 'SimpleFlight'
     ).join()
     # Confirm landed before disconnecting
-    time.sleep(10)
     print("landed!")
     time.sleep(5)
-
-    """     
+     
     # cleanup
     print("disarming...")
     client.armDisarm(False)
@@ -211,7 +277,6 @@ def flyWaypoints(waypoints: np.ndarray, playerSpeed: np.float32):
     print("disconnecting...")
     client.enableApiControl(False)
     print("disconnected!")   
-    """
 
     return
 
@@ -411,3 +476,5 @@ def plotFOVs(waypoints: np.ndarray, spawnpoints: np.ndarray, FOV: np.array, wayp
         ax.azim = -50
         ax.elev = 20
         plt.show()
+    return
+
