@@ -4,8 +4,8 @@ import threading
 
 # Pull Frames Flag
 SAVE_IMGS = True
-NUM_FRAMES = 100
-FRAME_RATE = 5
+NUM_FRAMES = 200
+FRAME_RATE = 10 # fps
 
 # Define the Points of Interest in Unreal coordinates
 baseballDiamond = np.array([[-18045, 24560, 320]]) # Baseball Diamond
@@ -28,7 +28,7 @@ poiLabels = [
     "Baseball Diamond",
     "Lake Fountain",
     "Tennis Court",
-    "Far Field"
+    "Far Field",
 ]
 
 # Define the main function
