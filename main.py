@@ -5,13 +5,15 @@ import threading
 # Pull Frames Flag
 SAVE_IMGS = True
 NUM_FRAMES = 100
+FRAME_RATE = 30
 
-# Define the start and end positions in Unreal coordinates
+# Define the Points of Interest in Unreal coordinates
 baseballDiamond = np.array([[-18045, 24560, 320]]) # Baseball Diamond
 lakeFountain = np.array([[3000, 5000, -430]]) # Lake
 tennisCourt = np.array([[-9400, -38390, 90]]) # Tennis Courts
 farField = np.array([[-84820, -15650, 10]]) # Far Field
 
+# Concatenate the POIs into a single array
 worldPOIs = np.concatenate(
     (
         baseballDiamond, 
@@ -21,6 +23,7 @@ worldPOIs = np.concatenate(
     )
 )
 
+# Define the Labels for the POIs
 poiLabels = [
     "Baseball Diamond",
     "Lake Fountain",
@@ -28,8 +31,10 @@ poiLabels = [
     "Far Field"
 ]
 
+# Define the main function
 def main():
 
+    # Create the waypoints for the drone to fly
     droneWaypoints = POIPath(
         POIs=worldPOIs,
         POI_Labels=poiLabels,
@@ -49,7 +54,7 @@ def main():
         # Capture Data to Save Folders
         pullFrames(
             numFrames=NUM_FRAMES,
-            timeInterval=1,
+            frameRate=FRAME_RATE,
             saveFolder="AirSim-Tools/saved_imgs/"
         )  
     # Wait for the fly_thread to finish

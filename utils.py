@@ -178,13 +178,13 @@ def flyWaypoints(waypoints: np.ndarray, playerSpeed: np.float32):
 
     return
 
-def pullFrames(numFrames: np.uint8, timeInterval: np.float32, saveFolder: str):
+def pullFrames(numFrames: np.uint8, frameRate: np.float32, saveFolder: str):
     """
     Pulls a specified number of frames from the AirSim simulator and saves them to the specified folder.
 
     Args:
         numFrames (int): Number of frames to pull.
-        timeInterval (np.float32): Time interval between each frame pull.
+        frameRate (np.float32): Frame rate in frames per second. Defaults to 10.0 fps.
         saveFolder (str): Path to the folder where the frames will be saved.
 
     Returns:
@@ -206,7 +206,8 @@ def pullFrames(numFrames: np.uint8, timeInterval: np.float32, saveFolder: str):
     os.makedirs(maskFolder, exist_ok=True)
 
     imageIndex = len(os.listdir(povFolder))+1
-
+    timeInterval = 1.0/frameRate
+    
     for i in range(numFrames):
         # Specify the image names
         pov_img_name   = f"pov_{imageIndex+i}.png"
