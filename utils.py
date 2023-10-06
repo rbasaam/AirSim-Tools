@@ -207,7 +207,8 @@ def pullFrames(numFrames: np.uint8, frameRate: np.float32, saveFolder: str):
 
     imageIndex = len(os.listdir(povFolder))+1
     timeInterval = 1.0/frameRate
-    
+
+    time.sleep(5)
     for i in range(numFrames):
         # Specify the image names
         pov_img_name   = f"pov_{imageIndex+i}.png"

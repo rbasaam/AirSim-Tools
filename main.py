@@ -5,7 +5,7 @@ import threading
 # Pull Frames Flag
 SAVE_IMGS = True
 NUM_FRAMES = 100
-FRAME_RATE = 30
+FRAME_RATE = 5
 
 # Define the Points of Interest in Unreal coordinates
 baseballDiamond = np.array([[-18045, 24560, 320]]) # Baseball Diamond
@@ -39,10 +39,10 @@ def main():
         POIs=worldPOIs,
         POI_Labels=poiLabels,
         surveyAltitude=30,
-        ySweep=20,
-        sideSweeps=1,
+        ySweep=0,
+        sideSweeps=0,
         numWaypoints=200,
-        plotFlag=False,
+        plotFlag=True,
     )
    
     # Create a thread for flying the waypoints
