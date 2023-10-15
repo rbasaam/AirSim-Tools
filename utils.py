@@ -248,7 +248,7 @@ def droneSpawn(waypoints: np.ndarray, numDrones: np.uint8, FOV: np.array, plotFl
         plotFlag (bool, optional): Flag indicating whether to plot the spawn points. Defaults to False.
 
     Returns:
-        np.ndarray: Array of spawn points for each drone at each waypoint.
+        np.ndarray: Array of spawn points for each drone at each waypoint shape (numDrones,3,numWaypoints).
     """
     # Calculate Tangent Vectors for each waypoint
     tangentVectors = getPathTangents(waypoints)
