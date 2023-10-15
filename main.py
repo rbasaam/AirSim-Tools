@@ -34,7 +34,7 @@ poiLabels = [
 # Define the main function
 def main():
 
-    # Create the waypoints for the drone to fly
+    # Create the Waypoints for the Parent Drone to fly
     droneWaypoints = POIPath(
         POIs=worldPOIs,
         POI_Labels=poiLabels,
@@ -42,9 +42,15 @@ def main():
         ySweep=0,
         sideSweeps=0,
         numWaypoints=200,
-        plotFlag=True,
     )
-   
+
+    # Generate Random Spawn Points for Child Drones
+    droneSpawnPoints = droneSpawn(
+        waypoints=droneWaypoints,
+        numDrones=2,
+        FOV=np.array([10, 90, 60]),
+    )
+
     # Create a thread for flying the waypoints
     playerSpeed = 20.0
     fly_thread = threading.Thread(target=flyWaypoints, args=(droneWaypoints, playerSpeed))
