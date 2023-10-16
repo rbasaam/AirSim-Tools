@@ -33,6 +33,7 @@ droneWaypoints = POIPath(
     ySweep=0,
     sideSweeps=0,
     numWaypoints=200,
+    plotFlag=True,
 )
 
 # Generate Random Spawn Points for Child Drones
@@ -40,5 +41,6 @@ droneSpawnPoints = droneSpawn(
     waypoints=droneWaypoints,
     numDrones=2,
     FOV=np.array([10, 90, 60]),
+    plotFlag=True,
 )
 
