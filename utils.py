@@ -5,7 +5,9 @@ import time
 import os
 from icecream import ic
 
-def unreal2dronePOIs(unrealPOIs):
+def unreal2dronePOIs(
+        unrealPOIs: np.ndarray
+    ):
     """
     Convert the Unreal POIs to Drone Coordinates
     """
@@ -22,12 +24,12 @@ def unreal2dronePOIs(unrealPOIs):
     return dronePOIs
 
 def p2pSweep(
-        startPoint, 
-        endPoint, 
-        surveyAltitude, 
-        sweepAmplitude, 
-        numSweeps, 
-        numWaypoints
+        startPoint: np.ndarray, 
+        endPoint: np.ndarray, 
+        surveyAltitude: np.float32, 
+        sweepAmplitude: np.float32, 
+        numSweeps: np.uint8, 
+        numWaypoints: np.uint8
     ):
     """
     Generate a path that sweeps from a start point to an end point.
