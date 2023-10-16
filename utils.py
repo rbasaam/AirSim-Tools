@@ -97,7 +97,6 @@ def POIPath(
     """ 
     # Reset the POIs to the origin and convert to meters in the drone Frame
     dronePOIs = (POIs - POIs[0,:])*np.array([0.01, 0.01, -0.01])
-    ic(dronePOIs)
     # Compute the direction of each path segment between POIs
     segmentDirections = np.diff(dronePOIs, axis=0)
     # Initialize the path array
@@ -174,10 +173,8 @@ def flyWaypoints(
     print(f"FOV: {client.simGetCurrentFieldOfView(camera_name='0')}")
     print(f"Vehicle Name: {client.listVehicles()[0]}")
 
-    state = client.getMultirotorState(vehicle_name='SimpleFlight')
-    s = ic(state)
-    print("state: %s" % s)
-
+    ic(client.getMultirotorState(vehicle_name='SimpleFlight'))
+    
     # takeoff
     client.takeoffAsync().join()
     print("took off!")
