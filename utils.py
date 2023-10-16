@@ -5,12 +5,77 @@ import time
 import os
 from icecream import ic
 
+def unreal2dronePOIs(unrealPOIs):
+    """
+    Convert the Unreal POIs to Drone Coordinates
+    """
+    # Define the Transformation Matrix
+    T = np.array([
+        [0.01,  0.00,  0.00],
+        [0.00,  0.01,  0.00],
+        [0.00,  0.00, -0.01],
+    ])
+
+    # Convert the POIs
+    dronePOIs = np.matmul(unrealPOIs, T)
+
+    return dronePOIs
+
+def p2pSweep(
+        startPoint, 
+        endPoint, 
+        surveyAltitude, 
+        sweepAmplitude, 
+        numSweeps, 
+        numWaypoints
+    ):
+    """
+    Generate a path that sweeps from a start point to an end point.
+
+    Args:
+        startPoint (np.ndarray): Start point of the path.
+        endPoint (np.ndarray): End point of the path.
+        surveyAltitude (np.float32): Altitude at which to survey the POIs.
+        sweepAmplitude (np.float32): Amplitude of the side-to-side sweep.
+        numSweeps (np.float32): Number of side-to-side sweeps.
+        numWaypoints (np.uint8): Number of waypoints per segment.
+    
+    Returns:
+        np.ndarray: Array of waypoints representing the survey path.
+    """
+    # Calculate the direction of the path segment
+    segmentDirection = endPoint - startPoint
+    # Calculate the rotation matrix to align the path segment with the x-axis
+    theta = np.arctan2(segmentDirection[1], segmentDirection[0])
+    rotationMatrix = np.array([[np.cos(theta), -np.sin(theta), 0], [np.sin(theta), np.cos(theta), 0], [0, 0, 1]])
+    # Calculate the range of the path segment
+    rng = np.sqrt(segmentDirection[0]**2 + segmentDirection[1]**2)
+    # Generate the path with at least 1000 waypoints
+    if numWaypoints > 1000:
+        xx = np.linspace(0, rng, numWaypoints)
+        zz = np.linspace(0, segmentDirection[2], numWaypoints)-surveyAltitude
+    else :
+        xx = np.linspace(0, rng, 1000)
+        zz = np.linspace(0, segmentDirection[2], 1000)-surveyAltitude
+    # Select waypoints from the path
+    indices = np.linspace(0, xx.shape[0]-1, numWaypoints).astype(int)
+    xx = xx[indices]
+    zz = zz[indices]
+    # Calculate the y sweep
+    yy = sweepAmplitude*np.sin((numSweeps*2*np.pi*xx)/rng)
+    # Rotate waypoints by theta to align with path segment
+    waypoints = np.matmul(rotationMatrix,np.array([xx, yy, zz])).transpose()
+    # Translate waypoints to path segment origin
+    waypoints = waypoints + startPoint
+
+    return waypoints
+
 def POIPath(
         POIs: np.ndarray,
         POI_Labels: list,
         surveyAltitude: np.float32,
-        ySweep: np.float32,
-        sideSweeps: np.float32,
+        sweepAmplitude: np.float32,
+        numSweeps: np.float32,
         numWaypoints: np.uint8,
         plotFlag=False
         ):
@@ -22,8 +87,8 @@ def POIPath(
         POIs (numpy.ndarray): Array of POI coordinates.
         POI_Labels (list): List of POI labels.
         surveyAltitude (np.float32): Altitude at which to survey the POIs.
-        ySweep (np.float32): Amplitude of the side-to-side sweep.
-        sideSweeps (np.float32): Number of side-to-side sweeps.
+        sweepAmplitude (np.float32): Amplitude of the side-to-side sweep.
+        numSweeps (np.float32): Number of side-to-side sweeps.
         numWaypoints (np.uint8): Number of waypoints per segment.
         plotFlag (bool, optional): Flag indicating whether to plot the path. Defaults to False.
 
@@ -32,6 +97,7 @@ def POIPath(
     """ 
     # Reset the POIs to the origin and convert to meters in the drone Frame
     dronePOIs = (POIs - POIs[0,:])*np.array([0.01, 0.01, -0.01])
+    ic(dronePOIs)
     # Compute the direction of each path segment between POIs
     segmentDirections = np.diff(dronePOIs, axis=0)
     # Initialize the path array
@@ -40,19 +106,18 @@ def POIPath(
     droneWaypoints = np.zeros((numWaypoints*numSegments, 3))
     # Compute the path between each POI and the next
     for segment in range(numSegments):
-        # Generate the path with at least 1000 waypoints
-        if numWaypoints > 1000:
-            xx = np.linspace(dronePOIs[segment,0], dronePOIs[segment+1,0], numWaypoints)
-            yy = np.linspace(dronePOIs[segment,1], dronePOIs[segment+1,1], numWaypoints)+ySweep*np.sin((xx/segmentDirections[segment,0])*2*np.pi*sideSweeps)
-            zz = np.linspace(dronePOIs[segment,2], dronePOIs[segment+1,2], numWaypoints)-surveyAltitude
-        else:
-            xx = np.linspace(dronePOIs[segment,0], dronePOIs[segment+1,0], 1000)
-            yy = np.linspace(dronePOIs[segment,1], dronePOIs[segment+1,1], 1000)+ySweep*np.sin((xx/segmentDirections[segment,0])*2*np.pi*sideSweeps)
-            zz = np.linspace(dronePOIs[segment,2], dronePOIs[segment+1,2], 1000)-surveyAltitude
-        # select waypoints from the path
-        waypoints = np.array([xx, yy, zz]).T
-        indices = np.linspace(0, waypoints.shape[0]-1, numWaypoints).astype(int)
-        waypoints = waypoints[indices]
+        # Compute the start and end points of the path segment
+        startPoint = dronePOIs[segment,:]
+        endPoint = dronePOIs[segment+1,:]
+        # Compute the path between the start and end points
+        waypoints = p2pSweep(
+            startPoint=startPoint, 
+            endPoint=endPoint, 
+            surveyAltitude=surveyAltitude, 
+            sweepAmplitude=sweepAmplitude, 
+            numSweeps=numSweeps, 
+            numWaypoints=numWaypoints
+        )
         droneWaypoints[segment*numWaypoints:(segment+1)*numWaypoints,:] = waypoints
 
     if plotFlag:
@@ -81,7 +146,10 @@ def POIPath(
 
     return droneWaypoints
 
-def flyWaypoints(waypoints: np.ndarray, playerSpeed: np.float32):
+def flyWaypoints(
+        waypoints: np.ndarray, 
+        playerSpeed: np.float32
+    ):
     """
     Flies the multirotor along a given set of waypoints.
 
@@ -178,7 +246,11 @@ def flyWaypoints(waypoints: np.ndarray, playerSpeed: np.float32):
 
     return
 
-def pullFrames(numFrames: np.uint8, frameRate: np.float32, saveFolder: str):
+def pullFrames(
+        numFrames: np.uint8, 
+        frameRate: np.float32, 
+        saveFolder: str
+    ):
     """
     Pulls a specified number of frames from the AirSim simulator and saves them to the specified folder.
 
@@ -237,7 +309,12 @@ def pullFrames(numFrames: np.uint8, frameRate: np.float32, saveFolder: str):
 
     return
 
-def droneSpawn(waypoints: np.ndarray, numDrones: np.uint8, FOV: np.array, plotFlag=False):
+def droneSpawn(
+        waypoints: np.ndarray, 
+        numDrones: np.uint8, 
+        FOV: np.array, 
+        plotFlag=False
+    ):
     """
     Generates spawn points for a specified number of drones at each waypoint within the chief drones FOV.
 
@@ -265,10 +342,10 @@ def droneSpawn(waypoints: np.ndarray, numDrones: np.uint8, FOV: np.array, plotFl
         ranges = np.random.uniform(3, FOV[0], size=numDrones)
         # Generate random Theta Angles centered around the tangent vector
         tangentTheta = np.arctan2(tangentVectors[wp,1], tangentVectors[wp,0])
-        thetas = tangentTheta + (-thetaRange + (np.random.rand(numDrones)*thetaRange*2))
+        thetas = tangentTheta + -thetaRange/2 + (np.random.rand(numDrones)*thetaRange)
         # Generate random Phi Angles centered around the tangent vector
         tangentPhi = np.arctan2(tangentVectors[wp, 2], np.sqrt(tangentVectors[wp, 0]**2 + tangentVectors[wp, 1]**2)) 
-        phis = np.pi / 2 + tangentPhi + (-phiRange + (2 * phiRange * np.random.rand(numDrones)))
+        phis = np.pi / 2 + tangentPhi + -phiRange/2 + (np.random.rand(numDrones)*phiRange)
         # Convert spherical coordinates to Cartesian and add them to waypoints
         for drone in range(numDrones):
             spawnPoints[drone,:,wp] = waypoints[wp] + spherical2cartesian(ranges[drone], thetas[drone], phis[drone])
@@ -289,6 +366,7 @@ def droneSpawn(waypoints: np.ndarray, numDrones: np.uint8, FOV: np.array, plotFl
         ax.azim = -80 
         ax.elev = 18 
         ax.set_title('Random Spawn Points Along Flight Path in World Frame')
+        ax.set_aspect('equal')
         
         for wp in range(len(waypoints)):
             for drone in range(numDrones):
@@ -304,7 +382,9 @@ def droneSpawn(waypoints: np.ndarray, numDrones: np.uint8, FOV: np.array, plotFl
 
     return spawnPoints
 
-def getPathTangents(waypoints: np.ndarray):
+def getPathTangents(
+        waypoints: np.ndarray
+    ):
     """
     Calculates the tangent vectors for each waypoint in a given path.
 
@@ -318,11 +398,20 @@ def getPathTangents(waypoints: np.ndarray):
     tangentVectors = np.diff(waypoints, axis=0)
     tangentVectors = np.concatenate((tangentVectors, tangentVectors[-1:]), axis=0)
 
-    # Normalize Tangent Vectors
-    tangentVectors = tangentVectors/np.linalg.norm(tangentVectors, axis=1)[:,None]
+    # Normalize nonZero Tangent Vectors
+    for i in range(tangentVectors.shape[0]):
+        if np.linalg.norm(tangentVectors[i,:]) > 0:
+            tangentVectors[i,:] = tangentVectors[i,:]/np.linalg.norm(tangentVectors[i,:])
+        else:
+            tangentVectors[i,:] = tangentVectors[i-1,:]/np.linalg.norm(tangentVectors[i-1,:])
+
     return tangentVectors
 
-def spherical2cartesian(r, theta, phi):
+def spherical2cartesian(
+        r: float, 
+        theta: float, 
+        phi: float,
+    ):
     """
     Converts spherical coordinates to Cartesian coordinates.
 
@@ -339,7 +428,13 @@ def spherical2cartesian(r, theta, phi):
     z = r * np.cos(phi)
     return np.array([x, y, z])
 
-def plotFOVs(waypoints: np.ndarray, spawnpoints: np.ndarray, FOV: np.array, waypointIndex: np.uint8, fig=None):
+def plotFOVs(
+        waypoints: np.ndarray, 
+        spawnpoints: np.ndarray, 
+        FOV: np.array, 
+        waypointIndex: np.uint8, 
+        fig=None
+    ):
     # Calculate Tangent Vectors all Waypoints
     tangentVectors = getPathTangents(waypoints)
     radius = FOV[0]
@@ -374,5 +469,6 @@ def plotFOVs(waypoints: np.ndarray, spawnpoints: np.ndarray, FOV: np.array, wayp
         ax.set_title(f"Waypoint {waypointIndex} FOV and Random Spawn Points")
         ax.azim = -50
         ax.elev = 20
+        ax.set_aspect('equal')
         plt.show()
     return

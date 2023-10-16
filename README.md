@@ -18,6 +18,23 @@ Install the required dependencies:
 
 ## Usage
 
+### Setup Environments
+Some specific package versions are required to communicate to AirSim using the API, ```msgpack-rpc-python``` requires an older version of ```tornado``` and so a virtual environment is included in this repo to avoid conflicts with other project environments.
+
+In Windows:
+
+```bash
+cd your\path\to\AirSim-Tools
+.\env\Scripts\activate
+
+```
+
+In Linux:
+```bash
+cd your/path/to/AirSim-Tools
+./venv/bin/activate
+```
+
 ### `utils.py`
 
 The `utils.py` module provides several utility functions for working with the AirSim simulator. Here are the available functions:

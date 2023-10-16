@@ -25,22 +25,23 @@ poiLabels = [
     "Far Field",
 ]
 
+
+
 # Create the Waypoints for the Parent Drone to fly
 droneWaypoints = POIPath(
     POIs=worldPOIs,
     POI_Labels=poiLabels,
     surveyAltitude=30,
-    ySweep=0,
-    sideSweeps=0,
-    numWaypoints=200,
+    sweepAmplitude=50,
+    numSweeps=4,
+    numWaypoints=120,
     plotFlag=True,
 )
 
 # Generate Random Spawn Points for Child Drones
 droneSpawnPoints = droneSpawn(
     waypoints=droneWaypoints,
-    numDrones=2,
-    FOV=np.array([10, 90, 60]),
+    numDrones=1,
+    FOV=np.array([20, 90, 60]),
     plotFlag=True,
 )
-

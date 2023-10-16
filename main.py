@@ -34,14 +34,15 @@ poiLabels = [
 # Define the main function
 def main():
 
-    # Create the Waypoints for the Parent Drone to fly
+    # Create the Waypoints for the Chief Drone to fly
     droneWaypoints = POIPath(
         POIs=worldPOIs,
         POI_Labels=poiLabels,
         surveyAltitude=30,
-        ySweep=0,
-        sideSweeps=0,
-        numWaypoints=200,
+        sweepAmplitude=50,
+        numSweeps=4,
+        numWaypoints=120,
+        plotFlag=True,
     )
 
     # Generate Random Spawn Points for Child Drones
@@ -49,6 +50,7 @@ def main():
         waypoints=droneWaypoints,
         numDrones=2,
         FOV=np.array([10, 90, 60]),
+        plotFlag=True,
     )
 
     # Create a thread for flying the waypoints
