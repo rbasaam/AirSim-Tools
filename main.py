@@ -3,9 +3,10 @@ import numpy as np
 import threading
 
 # Pull Frames Flag
-SAVE_IMGS = False # Save Images to Disk
+SAVE_IMGS = True # Save Images to Disk
 NUM_FRAMES = 200 # Number of Frames to Save
 FRAME_RATE = 10 # fps
+SAV_FLDR = "saved_imgs/" # Save Folder
 
 # Flight Path Parameters
 PLAYER_SPD = 20 # m/s
@@ -61,6 +62,7 @@ def main():
         waypoints=droneWaypoints,
         numDrones=NUM_DRONES,
         FOV=FOV,
+        plotFlag=True,
     )
 
     fly_thread = threading.Thread(target=flyWaypoints, args=(droneWaypoints, PLAYER_SPD))
@@ -71,7 +73,7 @@ def main():
         pullFrames(
             numFrames=NUM_FRAMES,
             frameRate=FRAME_RATE,
-            saveFolder="AirSim-Tools/saved_imgs/"
+            saveFolder=SAV_FLDR,
         )  
     # Wait for the fly_thread to finish
     fly_thread.join()    
