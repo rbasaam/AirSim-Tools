@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import os
-import pprint
+from icecream import ic
 
 def POIPath(
         POIs: np.ndarray,
@@ -107,7 +107,7 @@ def flyWaypoints(waypoints: np.ndarray, playerSpeed: np.float32):
     print(f"Vehicle Name: {client.listVehicles()[0]}")
 
     state = client.getMultirotorState(vehicle_name='SimpleFlight')
-    s = pprint.pformat(state)
+    s = ic(state)
     print("state: %s" % s)
 
     # takeoff
