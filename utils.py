@@ -294,9 +294,9 @@ def pullFrames(
         ])
 
         # Save the images
-        airsim.write_file(os.path.join(povFolder, f"pov_{imageIndex+i}.png"), responses[0].image_data_uint8)
-        airsim.write_file(os.path.join(depthFolder, f"depth_{imageIndex+i}.png"), responses[1].image_data_uint8)
-        airsim.write_file(os.path.join(maskFolder, f"mask_{imageIndex+i}.png"), responses[2].image_data_uint8)
+        airsim.write_file(os.path.join(povFolder, f"pov_0{imageIndex+i}.png"), responses[0].image_data_uint8)
+        airsim.write_file(os.path.join(depthFolder, f"depth_0{imageIndex+i}.png"), responses[1].image_data_uint8)
+        airsim.write_file(os.path.join(maskFolder, f"mask_0{imageIndex+i}.png"), responses[2].image_data_uint8)
 
         # Print the saved image names and folders
         print(f"Saved Image: {pov_img_name  } to {povFolder}")

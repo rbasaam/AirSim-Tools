@@ -45,3 +45,4 @@ droneSpawnPoints = droneSpawn(
     FOV=np.array([20, 90, 60]),
     plotFlag=True,
 )
+

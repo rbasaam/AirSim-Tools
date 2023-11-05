@@ -3,7 +3,7 @@ import numpy as np
 import threading
 
 # Pull Frames Flag
-SAVE_IMGS = True # Save Images to Disk
+SAVE_IMGS = False # Save Images to Disk
 NUM_FRAMES = 200 # Number of Frames to Save
 FRAME_RATE = 10 # fps
 SAV_FLDR = "saved_imgs/" # Save Folder
@@ -12,7 +12,7 @@ SAV_FLDR = "saved_imgs/" # Save Folder
 PLAYER_SPD = 20 # m/s
 SURVEY_ALT = 30 # m
 SWEEP_AMP = 50 # m
-NUM_SWEEPS = 1 # Number of Sweeps
+NUM_SWEEPS = 0 # Number of Sweeps
 NUM_WAYPOINTS = 120 # Number of Waypoints
 
 # Drone Spawn Parameters
@@ -54,7 +54,7 @@ def main():
         sweepAmplitude=SWEEP_AMP,
         numSweeps=NUM_SWEEPS,
         numWaypoints=NUM_WAYPOINTS,
-        plotFlag=True,
+        #plotFlag=True,
     )
 
     # Generate Random Spawn Points for Child Drones
@@ -62,7 +62,7 @@ def main():
         waypoints=droneWaypoints,
         numDrones=NUM_DRONES,
         FOV=FOV,
-        plotFlag=True,
+        #plotFlag=True,
     )
 
     fly_thread = threading.Thread(target=flyWaypoints, args=(droneWaypoints, PLAYER_SPD))
