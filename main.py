@@ -4,7 +4,7 @@ import threading
 
 # Pull Frames Flag
 SAVE_IMGS = True # Save Images to Disk
-NUM_FRAMES = 1000 # Number of Frames to Save
+NUM_FRAMES = 650 # Number of Frames to Save
 FRAME_RATE = 30 # fps
 SAV_FLDR = "saved_imgs/" # Save Folder
 
