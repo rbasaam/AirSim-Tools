@@ -3,9 +3,9 @@ import numpy as np
 import threading
 
 # Pull Frames Flag
-SAVE_IMGS = False # Save Images to Disk
-NUM_FRAMES = 200 # Number of Frames to Save
-FRAME_RATE = 10 # fps
+SAVE_IMGS = True # Save Images to Disk
+NUM_FRAMES = 1000 # Number of Frames to Save
+FRAME_RATE = 30 # fps
 SAV_FLDR = "saved_imgs/" # Save Folder
 
 # Flight Path Parameters
@@ -13,7 +13,7 @@ PLAYER_SPD = 20 # m/s
 SURVEY_ALT = 30 # m
 SWEEP_AMP = 50 # m
 NUM_SWEEPS = 0 # Number of Sweeps
-NUM_WAYPOINTS = 120 # Number of Waypoints
+NUM_WAYPOINTS = 60 # Number of Waypoints
 
 # Drone Spawn Parameters
 NUM_DRONES = 2 # Number of Drones to Spawn at each waypoint
