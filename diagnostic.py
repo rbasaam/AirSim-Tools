@@ -25,8 +25,6 @@ poiLabels = [
     "Far Field",
 ]
 
-
-
 # Create the Waypoints for the Parent Drone to fly
 droneWaypoints = POIPath(
     POIs=worldPOIs,

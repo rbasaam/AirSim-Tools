@@ -3,7 +3,7 @@ import numpy as np
 import threading
 
 # Pull Frames Flag
-SAVE_IMGS = True # Save Images to Disk
+SAVE_IMGS = False # Save Images to Disk
 NUM_FRAMES = 650 # Number of Frames to Save
 FRAME_RATE = 30 # fps
 SAV_FLDR = "saved_imgs/" # Save Folder
