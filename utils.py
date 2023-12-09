@@ -471,3 +471,33 @@ def plotFOVs(
         ax.set_aspect('equal')
         plt.show()
     return
+
+def testClientConnection():
+
+    # connect to airsim
+    print("connecting...")
+    client = airsim.MultirotorClient()
+    client.confirmConnection()
+    print("connected!")
+    client.enableApiControl(True)
+    client.armDisarm(True)
+    print("arming...")
+    print(f"FOV: {client.simGetCurrentFieldOfView(camera_name='0')}")
+    print(f"Vehicle Name: {client.listVehicles()[0]}")
+    print('Getting Multirotor State: ')
+    ic(client.getMultirotorState(vehicle_name='SimpleFlight'))
+    print('Getting Camera Info: ')
+    ic(client.simGetCameraInfo(camera_name='0'))
+    
+    print('Disarming in 5 seconds...')
+    time.sleep(5)
+    # cleanup
+    print("disarming...")
+    client.armDisarm(False)
+    print("disarmed!")
+
+    print("disconnecting...")
+    client.enableApiControl(False)
+    print("disconnected!")   
+
+    return

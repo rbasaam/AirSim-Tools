@@ -1,6 +1,8 @@
 from utils import *
 import numpy as np
 
+testClientConnection()
+
 # Define the Points of Interest in Unreal coordinates
 baseballDiamond = np.array([[-18045, 24560, 320]]) # Baseball Diamond
 lakeFountain = np.array([[3000, 5000, -430]]) # Lake
@@ -33,9 +35,9 @@ droneWaypoints = POIPath(
     POI_Labels=poiLabels,
     surveyAltitude=30,
     sweepAmplitude=50,
-    numSweeps=4,
+    numSweeps=0,
     numWaypoints=120,
-    plotFlag=True,
+    plotFlag=False,
 )
 
 # Generate Random Spawn Points for Child Drones
@@ -43,6 +45,6 @@ droneSpawnPoints = droneSpawn(
     waypoints=droneWaypoints,
     numDrones=1,
     FOV=np.array([20, 90, 60]),
-    plotFlag=True,
+    plotFlag=False,
 )
 
