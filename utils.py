@@ -170,14 +170,11 @@ def flyWaypoints(
     print("connecting...")
     client = airsim.MultirotorClient()
     client.confirmConnection()
-    print("connected!")
     client.enableApiControl(True)
-    client.armDisarm(True)
+    print("connected!")
     print("arming...")
-    print(f"Vehicle Name: {client.listVehicles()[0]}")
-
-    ic(client.getMultirotorState(vehicle_name='SimpleFlight'))
-
+    client.armDisarm(True)
+    print("armed!")
     # takeoff
     client.takeoffAsync().join()
     print("took off!")
@@ -192,7 +189,7 @@ def flyWaypoints(
         yaw_mode = airsim.YawMode(True,2), 
         lookahead = -1, 
         adaptive_lookahead = 1,
-        vehicle_name = 'SimpleFlight'
+        vehicle_name = DRONE_NAME
         ).join()
 
     # move to the end of the path
@@ -208,7 +205,7 @@ def flyWaypoints(
         yaw_mode = airsim.YawMode(True,2), 
         lookahead = -1, 
         adaptive_lookahead = 1,
-        vehicle_name = 'SimpleFlight'
+        vehicle_name = DRONE_NAME
         ).join() 
 
     time.sleep(5)  
@@ -220,7 +217,7 @@ def flyWaypoints(
         duration=10,
         drivetrain=airsim.DrivetrainType.MaxDegreeOfFreedom,
         yaw_mode=airsim.YawMode(False,0),
-        vehicle_name = 'SimpleFlight'
+        vehicle_name = DRONE_NAME
         ).join()
     
     time.sleep(5)
@@ -229,7 +226,7 @@ def flyWaypoints(
     print("landing...")
     client.landAsync(
         timeout_sec=10,
-        vehicle_name = 'SimpleFlight'
+        vehicle_name = DRONE_NAME
     ).join()
     # Confirm landed before disconnecting
     print("landed!")
@@ -249,6 +246,7 @@ def flyWaypoints(
 def pullFrames(
         saveFolder: str,
         resolution: str,
+        MAX_FRAMES=1000,
     ):
     """
     Pulls frames from the AirSim simulator and saves them to the specified folder.
@@ -272,28 +270,28 @@ def pullFrames(
     os.makedirs(sceneFolder, exist_ok=True)
     os.makedirs(maskFolder, exist_ok=True)
 
-    imageIndex = len(os.listdir(sceneFolder))+1
+    imageIndex = len(os.listdir(sceneFolder))
+    k = 1
 
     time.sleep(5)
-    while client.getMultirotorState().landed_state == airsim.LandedState.Flying:
+    while client.getMultirotorState().landed_state == airsim.LandedState.Flying and k < MAX_FRAMES:
         # Specify the image names
-        i = 1
-        pov_img_name   = f"pov_{imageIndex+i}.png"
-        mask_img_name  = f"mask_{imageIndex+i}.png"
+        pov_img_name   = f"pov_{imageIndex+k}.png"
+        mask_img_name  = f"mask_{imageIndex+k}.png"
         # Get images from the POV, depth, and segmentation mask feeds
         responses = client.simGetImages([
-            airsim.ImageRequest(['scene' + resolution], airsim.ImageType.Scene),  # POV
-            airsim.ImageRequest(['mask' + resolution], airsim.ImageType.Segmentation)  # Segmentation mask
+            airsim.ImageRequest('scene' + resolution, airsim.ImageType.Scene),  # POV
+            airsim.ImageRequest('mask' + resolution, airsim.ImageType.Segmentation)  # Segmentation mask
         ])
 
         # Save the images
-        airsim.write_file(os.path.join(sceneFolder, f"pov_0{imageIndex+i}.png"), responses[0].image_data_uint8)
-        airsim.write_file(os.path.join(maskFolder, f"mask_0{imageIndex+i}.png"), responses[1].image_data_uint8)
+        airsim.write_file(os.path.join(sceneFolder, f"scene_0{imageIndex+k}.png"), responses[0].image_data_uint8)
+        airsim.write_file(os.path.join(maskFolder, f"mask_0{imageIndex+k}.png"), responses[1].image_data_uint8)
 
         # Print the saved image names and folders
         print(f"Saved Image: {pov_img_name  } to {sceneFolder}")
         print(f"Saved Image: {mask_img_name } to {maskFolder} \n")
-        i+=1
+        k+=1
 
     return
 
@@ -474,8 +472,7 @@ def testClientConnection():
     client.armDisarm(True)
     print("arming...")
     print('Getting Multirotor State: ')
-    ic(client.getMultirotorState(vehicle_name=DRONE_NAME))
-    
+    ic(client.getMultirotorState(vehicle_name=DRONE_NAME))    
     print('Disarming in 5 seconds...')
     time.sleep(5)
     # cleanup

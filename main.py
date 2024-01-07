@@ -4,7 +4,9 @@ import threading
 
 # Pull Frames Flag
 SAVE_IMGS = True # Save Images to Disk
+IMG_RES = '1080p' # Image Resolution {'144p', '720p', '1080p'}
 SAV_FLDR = "saved_imgs/" # Save Folder
+MAX_FRAMES = 800 # Maximum Number of Frames to Save
 
 # Flight Path Parameters
 PLAYER_SPD = 10 # m/s
@@ -70,6 +72,7 @@ def main():
         # Capture Data to Save Folders
         pullFrames(
             saveFolder=SAV_FLDR,
+            resolution=IMG_RES,
         )  
     # Wait for the fly_thread to finish
     fly_thread.join()    
