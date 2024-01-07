@@ -5,6 +5,8 @@ import time
 import os
 from icecream import ic
 
+DRONE_NAME = 'chiefDrone'
+
 def unreal2dronePOIs(
         unrealPOIs: np.ndarray
     ):
@@ -172,7 +174,6 @@ def flyWaypoints(
     client.enableApiControl(True)
     client.armDisarm(True)
     print("arming...")
-    print(f"FOV: {client.simGetCurrentFieldOfView(camera_name='0')}")
     print(f"Vehicle Name: {client.listVehicles()[0]}")
 
     ic(client.getMultirotorState(vehicle_name='SimpleFlight'))
@@ -246,16 +247,13 @@ def flyWaypoints(
     return
 
 def pullFrames(
-        numFrames: np.uint8, 
-        frameRate: np.float32, 
-        saveFolder: str
+        saveFolder: str,
+        resolution: str,
     ):
     """
-    Pulls a specified number of frames from the AirSim simulator and saves them to the specified folder.
+    Pulls frames from the AirSim simulator and saves them to the specified folder.
 
     Args:
-        numFrames (int): Number of frames to pull.
-        frameRate (np.float32): Frame rate in frames per second. Defaults to 10.0 fps.
         saveFolder (str): Path to the folder where the frames will be saved.
 
     Returns:
@@ -267,44 +265,35 @@ def pullFrames(
     client.confirmConnection()
 
     # Ensure the folders exist
-    povFolder = os.path.join(saveFolder, "pov")
-    depthFolder = os.path.join(saveFolder, "depth")
+    sceneFolder = os.path.join(saveFolder, "scene")
     maskFolder = os.path.join(saveFolder, "mask")
 
     os.makedirs(saveFolder, exist_ok=True)
-    os.makedirs(povFolder, exist_ok=True)
-    os.makedirs(depthFolder, exist_ok=True)
+    os.makedirs(sceneFolder, exist_ok=True)
     os.makedirs(maskFolder, exist_ok=True)
 
-    imageIndex = len(os.listdir(povFolder))+1
-    timeInterval = 1.0/frameRate
+    imageIndex = len(os.listdir(sceneFolder))+1
 
     time.sleep(5)
-    for i in range(numFrames):
+    while client.getMultirotorState().landed_state == airsim.LandedState.Flying:
         # Specify the image names
+        i = 1
         pov_img_name   = f"pov_{imageIndex+i}.png"
-        depth_img_name = f"depth_{imageIndex+i}.png"
         mask_img_name  = f"mask_{imageIndex+i}.png"
-
         # Get images from the POV, depth, and segmentation mask feeds
         responses = client.simGetImages([
-            airsim.ImageRequest("0", airsim.ImageType.Scene),  # POV
-            airsim.ImageRequest("0", airsim.ImageType.DepthVis),  # Depth
-            airsim.ImageRequest("0", airsim.ImageType.Segmentation)  # Segmentation mask
+            airsim.ImageRequest(['scene' + resolution], airsim.ImageType.Scene),  # POV
+            airsim.ImageRequest(['mask' + resolution], airsim.ImageType.Segmentation)  # Segmentation mask
         ])
 
         # Save the images
-        airsim.write_file(os.path.join(povFolder, f"pov_0{imageIndex+i}.png"), responses[0].image_data_uint8)
-        airsim.write_file(os.path.join(depthFolder, f"depth_0{imageIndex+i}.png"), responses[1].image_data_uint8)
-        airsim.write_file(os.path.join(maskFolder, f"mask_0{imageIndex+i}.png"), responses[2].image_data_uint8)
+        airsim.write_file(os.path.join(sceneFolder, f"pov_0{imageIndex+i}.png"), responses[0].image_data_uint8)
+        airsim.write_file(os.path.join(maskFolder, f"mask_0{imageIndex+i}.png"), responses[1].image_data_uint8)
 
         # Print the saved image names and folders
-        print(f"Saved Image: {pov_img_name  } to {povFolder}")
-        print(f"Saved Image: {depth_img_name} to {depthFolder}")
+        print(f"Saved Image: {pov_img_name  } to {sceneFolder}")
         print(f"Saved Image: {mask_img_name } to {maskFolder} \n")
-
-        # Wait for the specified time interval before getting the next set of images
-        time.sleep(timeInterval)
+        i+=1
 
     return
 
@@ -479,15 +468,13 @@ def testClientConnection():
     client = airsim.MultirotorClient()
     client.confirmConnection()
     print("connected!")
+    ic(client.listVehicles())
+    print(f"Vehicle Name: {client.listVehicles()[0]}")
     client.enableApiControl(True)
     client.armDisarm(True)
     print("arming...")
-    print(f"FOV: {client.simGetCurrentFieldOfView(camera_name='0')}")
-    print(f"Vehicle Name: {client.listVehicles()[0]}")
     print('Getting Multirotor State: ')
-    ic(client.getMultirotorState(vehicle_name='SimpleFlight'))
-    print('Getting Camera Info: ')
-    ic(client.simGetCameraInfo(camera_name='0'))
+    ic(client.getMultirotorState(vehicle_name=DRONE_NAME))
     
     print('Disarming in 5 seconds...')
     time.sleep(5)

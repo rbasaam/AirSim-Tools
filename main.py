@@ -3,16 +3,14 @@ import numpy as np
 import threading
 
 # Pull Frames Flag
-SAVE_IMGS = False # Save Images to Disk
-NUM_FRAMES = 650 # Number of Frames to Save
-FRAME_RATE = 30 # fps
+SAVE_IMGS = True # Save Images to Disk
 SAV_FLDR = "saved_imgs/" # Save Folder
 
 # Flight Path Parameters
-PLAYER_SPD = 20 # m/s
+PLAYER_SPD = 10 # m/s
 SURVEY_ALT = 30 # m
 SWEEP_AMP = 50 # m
-NUM_SWEEPS = 0 # Number of Sweeps
+NUM_SWEEPS = 2 # Number of Sweeps
 NUM_WAYPOINTS = 60 # Number of Waypoints
 
 # Drone Spawn Parameters
@@ -71,8 +69,6 @@ def main():
     if SAVE_IMGS:
         # Capture Data to Save Folders
         pullFrames(
-            numFrames=NUM_FRAMES,
-            frameRate=FRAME_RATE,
             saveFolder=SAV_FLDR,
         )  
     # Wait for the fly_thread to finish
